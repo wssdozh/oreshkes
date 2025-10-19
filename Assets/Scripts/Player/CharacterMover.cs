@@ -1,83 +1,65 @@
 using UnityEngine;
 
-[RequireComponent(typeof(CharacterController))]
+
+[RequireComponent(typeof(CapsuleCollider))]
 public class CharacterMover : MonoBehaviour
 {
-    [Header("Movement")]
-    [SerializeField] private float _walkSpeed = 2.0f;
-    [SerializeField] private float _sprintSpeed = 4.5f;
-    [SerializeField] private float _speedSmoothTime = 0.15f;
-    [SerializeField] private float _jumpHeight = 1.0f;
-    [SerializeField] private float _gravityValue = 9.81f;
+    [Header("Зависимости")]
+    [SerializeField] private Rigidbody _rigidbody;
+    [SerializeField] private ForceMode _forceMode;
 
-    [Header("State (debug)")]
-    [SerializeField] private float _verticalVelocity;
-    [SerializeField] private float _groundedTimer;
-    [SerializeField] private bool _isSprinting;
+    [Header("Настройки")]
+    [SerializeField] private float _speed = 3f;
+    [SerializeField] private float _speedSprint = 6f;
+    [SerializeField] private float _jumpForce = 5f;
+    [SerializeField] private float _rayLengthGround = 0.2f;
+    [SerializeField] private LayerMask _groundLayer = 1;
 
-    [Header("References")]
-    [SerializeField] private Transform _cameraTransform;
+    private Vector3 _moveDirection;
+    private bool _isSprinting;
 
-    private CharacterController _controller;
-    private float _currentSpeed;
-    private float _speedVelocity;
+    private bool IsGrounded => Physics.Raycast(transform.position, Vector3.down, _rayLengthGround, _groundLayer);
 
-    private void Awake()
+    private void FixedUpdate()
     {
-        _controller = GetComponent<CharacterController>();
+        Move();
     }
 
-    public void TickMovement(Vector2 moveInput, bool jumpPressed, bool sprintPressed)
+    public void OnMove(Vector2 input)
     {
-        HandleGrounding();
-        ApplyGravity();
-        HandleJump(jumpPressed);
-
-        Vector3 moveDirection = CalculateCameraRelativeMove(moveInput, sprintPressed);
-        MoveCharacter(moveDirection);
+        _moveDirection = new Vector3(input.x, 0f, input.y);
     }
 
-    private void HandleGrounding()
+    public void OnSprint(bool sprinting)
     {
-        if (_controller.isGrounded == true)
-            _groundedTimer = 0.2f;
-
-        if (_groundedTimer > 0f)
-            _groundedTimer -= Time.deltaTime;
-
-        if (_controller.isGrounded == true && _verticalVelocity < 0f)
-            _verticalVelocity = 0f;
+        _isSprinting = sprinting;
     }
 
-    private void ApplyGravity() => _verticalVelocity -= _gravityValue * Time.deltaTime;
-
-    private void HandleJump(bool jumpPressed)
+    public void OnJump()
     {
-        if (jumpPressed == true && _groundedTimer > 0f)
+        if (IsGrounded)
         {
-            _groundedTimer = 0f;
-            _verticalVelocity = Mathf.Sqrt(_jumpHeight * 2f * _gravityValue);
+            _rigidbody.AddForce(Vector3.up * _jumpForce, ForceMode.Impulse);
         }
     }
 
-    private Vector3 CalculateCameraRelativeMove(Vector2 moveInput, bool sprintPressed)
-    {
-        Vector3 inputDir = new Vector3(moveInput.x, 0f, moveInput.y);
-        Vector3 cameraForward = _cameraTransform.forward;
-        Vector3 cameraRight = _cameraTransform.right;
-        cameraForward.y = 0f;
-        cameraRight.y = 0f;
+    private void Move()
+    {        
+        if (_moveDirection.sqrMagnitude < 0.01f)
+        {
+            // _rigidbody.linearVelocity = new Vector3(0f, _rigidbody.linearVelocity.y, 0f); 
+            return;
+        }
 
-        float targetSpeed = sprintPressed == true ? _sprintSpeed : _walkSpeed;
-        _currentSpeed = Mathf.SmoothDamp(_currentSpeed, targetSpeed, ref _speedVelocity, _speedSmoothTime);
-        _isSprinting = sprintPressed;
+        float speed = _isSprinting ? _speedSprint : _speed;
+        Vector3 targetVelocity = _moveDirection.normalized * speed;
 
-        return (cameraForward.normalized * inputDir.z + cameraRight.normalized * inputDir.x) * _currentSpeed;
+        _rigidbody.linearVelocity = new Vector3(targetVelocity.x, _rigidbody.linearVelocity.y, targetVelocity.z);
     }
 
-    private void MoveCharacter(Vector3 move)
+    private void OnDrawGizmosSelected()
     {
-        move.y = _verticalVelocity;
-        _controller.Move(move * Time.deltaTime);
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawLine(transform.position, transform.position + Vector3.down * _rayLengthGround);
     }
 }
