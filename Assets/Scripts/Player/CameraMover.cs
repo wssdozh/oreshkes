@@ -1,54 +1,33 @@
 using UnityEngine;
 
+
 public class CameraMover : MonoBehaviour
 {
-    [Header("Target")]
-    [SerializeField] private Transform _target;
+    [Header("Зависимости")]
+    [SerializeField] private Transform _player;
+    [SerializeField] private CursorManager _cursorManager;
+    [SerializeField] private Camera _camera;
 
-    [Header("Camera Settings")]
-    [SerializeField] private float _distance = 4f;
-    [SerializeField] private float _sensitivityX = 2f;
-    [SerializeField] private float _sensitivityY = 2f;
-    [SerializeField] private float _smoothTime = 0.05f;
-    [SerializeField] private float _minPitch = -30f;
-    [SerializeField] private float _maxPitch = 70f;
+    [Header("Настройки")]
+    [SerializeField] private float _height = 10f;
+    [SerializeField] private float _smoothSpeed = 5f;
+    [Range(0f, 1f)][SerializeField] private float _mouseInfluence = 0.3f;
 
-    [Header("Character Rotation")]
-    [SerializeField] private bool _rotateTarget = true;
-    [SerializeField] private float _rotationLerpSpeed = 10f;
+    [Header("Смещение & Поворот")]
+    [SerializeField] private Vector3 _positionOffset = Vector3.zero;
+    [SerializeField, Range(30f, 90f)] private float _tiltAngle = 60f;
 
-    private Vector2 _targetRotation;
-    private Vector2 _currentRotation;
-    private Vector2 _rotationVelocity;
+    private Vector3 _targetPosition;
 
-    public void TickCamera(Vector2 lookInput)
+    private void LateUpdate()
     {
-        if (_target == null)
-            return;
+        Vector3 playerPos = _player.position;
 
-        _targetRotation.y += lookInput.x * _sensitivityX;
-        _targetRotation.x -= lookInput.y * _sensitivityY;
-        _targetRotation.x = Mathf.Clamp(_targetRotation.x, _minPitch, _maxPitch);
+        Vector3 mixedPoint = Vector3.Lerp(playerPos, _cursorManager.MouseGroundPos, _mouseInfluence);
 
-        _currentRotation = Vector2.SmoothDamp(
-            _currentRotation,
-            _targetRotation,
-            ref _rotationVelocity,
-            _smoothTime
-        );
+        _targetPosition = new Vector3(mixedPoint.x, _player.transform.position.y + _height, mixedPoint.z) + _positionOffset;
 
-        Quaternion rotation = Quaternion.Euler(_currentRotation.x, _currentRotation.y, 0f);
-        Vector3 position = _target.position - rotation * Vector3.forward * _distance;
-        transform.SetPositionAndRotation(position, rotation);
-
-        if (_rotateTarget == true)
-        {
-            Quaternion targetYawRotation = Quaternion.Euler(0f, transform.eulerAngles.y, 0f);
-            _target.rotation = Quaternion.Lerp(
-                _target.rotation,
-                targetYawRotation,
-                Time.deltaTime * _rotationLerpSpeed
-            );
-        }
+        transform.position = Vector3.Lerp(transform.position, _targetPosition, _smoothSpeed * Time.deltaTime);
+        transform.rotation = Quaternion.Euler(_tiltAngle, 0f, 0f);
     }
 }

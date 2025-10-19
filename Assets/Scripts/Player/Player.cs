@@ -1,71 +1,58 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
+
 public class Player : MonoBehaviour
 {
-    [Header("References")]
-    [SerializeField] private CharacterMover _characterMover;
+    [Header("Зависимости")]
+    [SerializeField] private CharacterMover _movement;
     [SerializeField] private CameraMover _cameraMover;
-    [SerializeField] private Cursor _cursor;
+    [SerializeField] private CursorManager _cursor;
+    [SerializeField] private Camera _mainCamera;
 
     private PlayerInputActions _inputs;
-    private Vector2 _moveInput;
-    private Vector2 _lookInput;
-    private bool _jumpPressed;
-    private bool _sprintPressed;
 
     private void Awake()
     {
         _inputs = new PlayerInputActions();
 
-        _inputs.Player.Move.performed += ctx => _moveInput = ctx.ReadValue<Vector2>();
-        _inputs.Player.Move.canceled += _ => _moveInput = Vector2.zero;
+        _inputs.Player.Move.performed += OnMovePerformed;
+        _inputs.Player.Move.canceled += OnMoveCanceled;
 
-        _inputs.Player.Look.performed += ctx => _lookInput = ctx.ReadValue<Vector2>();
-        _inputs.Player.Look.canceled += _ => _lookInput = Vector2.zero;
+        _inputs.Player.Jump.performed += OnJumpPerformed;
 
-        _inputs.Player.Jump.performed += _ => _jumpPressed = true;
-        _inputs.Player.Sprint.performed += _ => _sprintPressed = true;
-        _inputs.Player.Sprint.canceled += _ => _sprintPressed = false;
+        _inputs.Player.Sprint.performed += OnSprintPerformed;
+        _inputs.Player.Sprint.canceled += OnSprintCanceled;
 
-        _inputs.UI.Cancel.performed += _ => ToggleCursorLock(false);
-        _inputs.UI.Click.performed += _ =>
-        {
-            if (_cursor != null && _cursor.IsCursorLocked() == false)
-                ToggleCursorLock(true);
-        };
+        // _inputs.Player.Look.performed += OnLookPerformed; 
     }
 
-    private void OnEnable()
+    private void OnEnable() => _inputs.Enable();
+    private void OnDisable() => _inputs.Disable();
+
+    private void OnMovePerformed(InputAction.CallbackContext ctx)
     {
-        _inputs.Enable();
-        ToggleCursorLock(true);
+        Vector2 input = ctx.ReadValue<Vector2>();
+        _movement?.OnMove(input);
     }
 
-    private void OnDisable()
+    private void OnMoveCanceled(InputAction.CallbackContext ctx)
     {
-        _inputs.Disable();
-        ToggleCursorLock(false);
+        _movement?.OnMove(Vector2.zero);
     }
 
-    private void Update()
+    private void OnJumpPerformed(InputAction.CallbackContext ctx)
     {
-        if (_characterMover != null)
-        {
-            _characterMover.TickMovement(_moveInput, _jumpPressed, _sprintPressed);
-            _jumpPressed = false;
-        }
+        _movement?.OnJump();
     }
 
-    private void LateUpdate()
+    private void OnSprintPerformed(InputAction.CallbackContext ctx)
     {
-        if (_cameraMover != null && _cursor != null && _cursor.IsCursorLocked() == true)
-            _cameraMover.TickCamera(_lookInput);
+        _movement?.OnSprint(true);
     }
 
-    private void ToggleCursorLock(bool isLocked)
+    private void OnSprintCanceled(InputAction.CallbackContext ctx)
     {
-        if (_cursor != null)
-            _cursor.LockCursor(isLocked);
+        _movement?.OnSprint(false);
     }
 }

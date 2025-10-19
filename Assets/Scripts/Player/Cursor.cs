@@ -1,23 +1,50 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
-public class Cursor : MonoBehaviour
+
+public class CursorManager : MonoBehaviour
 {
-    private bool _cursorLocked = true;
+    [Header("Зависимости")]
+    [SerializeField] private Camera _cam;
+    [SerializeField] private Transform _player;
+    [SerializeField] private RectTransform _rectTransform;
 
-    private void Start()
+    public Vector3 MouseWorldPos { get; private set; }
+    public Vector3 MouseGroundPos { get; private set; }
+
+    public Vector2 MouseScreenPos => Mouse.current.position.ReadValue();
+
+    private void Awake()
     {
-        LockCursor(true);
+        Cursor.visible = false;
     }
 
-    public void LockCursor(bool isLocked)
+    private void Update()
     {
-        _cursorLocked = isLocked;
-        UnityEngine.Cursor.visible = isLocked == false;
-        UnityEngine.Cursor.lockState = isLocked == true ? CursorLockMode.Locked : CursorLockMode.None;
+        _rectTransform.position = MouseScreenPos;
+
+        UpdateWorldPositions();
     }
 
-    public bool IsCursorLocked()
+    private void UpdateWorldPositions()
     {
-        return _cursorLocked;
+        if (_cam == null || _player == null)
+            return;
+
+        Ray ray = _cam.ScreenPointToRay(MouseScreenPos);
+
+        Plane playerPlane = new Plane(Vector3.up, new Vector3(0, _player.position.y, 0));
+
+        if (playerPlane.Raycast(ray, out float distToPlayer))
+        {
+            MouseWorldPos = ray.GetPoint(distToPlayer);
+        }
+
+        Plane groundPlane = new Plane(Vector3.up, Vector3.zero);
+
+        if (groundPlane.Raycast(ray, out float distToGround))
+        {
+            MouseGroundPos = ray.GetPoint(distToGround);
+        }
     }
 }
