@@ -6,16 +6,16 @@ public class FadableObstacle : MonoBehaviour, IFadable
     [SerializeField] private Renderer _renderer;
     [SerializeField] private FadableSettings _settings;
 
-    private MaterialPropertyBlock _block;
-    private float _currentAlpha = 1f;
+    private Material _material;
     private Tween _tween;
+    private float _currentAlpha = 1f;
     private float _fadeDuration = 0.25f;
     private float _occludedAlpha = 0.35f;
 
     private void Awake()
     {
-        _block = new MaterialPropertyBlock();
-        
+        _material = _renderer.material;
+
         if (_settings != null)
         {
             _fadeDuration = _settings.FadeDuration;
@@ -39,16 +39,14 @@ public class FadableObstacle : MonoBehaviour, IFadable
         {
             _tween.Kill();
         }
-        _tween = DOTween.To(() => _currentAlpha, SetAlpha, targetAlpha, _fadeDuration);
+
+        _tween = _material.DOFade(targetAlpha, "_BaseColor", _fadeDuration)
+            .OnUpdate(UpdateCachedAlpha);
     }
 
-    private void SetAlpha(float alpha)
+    private void UpdateCachedAlpha()
     {
-        _currentAlpha = alpha;
-        _renderer.GetPropertyBlock(_block);
-        Color color = _renderer.sharedMaterial.GetColor("_BaseColor");
-        color.a = _currentAlpha;
-        _block.SetColor("_BaseColor", color);
-        _renderer.SetPropertyBlock(_block);
+        Color color = _material.GetColor("_BaseColor");
+        _currentAlpha = color.a;
     }
 }

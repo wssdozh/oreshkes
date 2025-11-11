@@ -16,7 +16,15 @@ public class HighlightAnimator : MonoBehaviour
 
         for (int i = 0; i < _renderers.Length; i++)
         {
-            _originalColors[i] = _renderers[i].material.color;
+            Material material = _renderers[i].sharedMaterial;
+            if (material.HasProperty("_BaseColor") == true)
+            {
+                _originalColors[i] = material.GetColor("_BaseColor");
+            }
+            else
+            {
+                _originalColors[i] = Color.white;
+            }
         }
     }
 
