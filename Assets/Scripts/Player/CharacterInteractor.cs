@@ -24,6 +24,7 @@ public class CharacterInteractor : MonoBehaviour
             return true;
 
         interactable = collider.GetComponentInParent<Interactable>();
+
         return interactable != null;
     }
 
@@ -34,6 +35,7 @@ public class CharacterInteractor : MonoBehaviour
         if (closest == null)
         {
             ClearHovered();
+            
             return;
         }
 
