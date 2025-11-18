@@ -67,6 +67,8 @@ public class LargeCarryInteractable : Interactable
         transform.SetParent(_originalParent, true);
         _rigidbody.isKinematic = false;
         _isCarried = false;
+
+        Highlight(true);
     }
 
     private void OnDisable()

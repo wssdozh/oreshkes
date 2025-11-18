@@ -7249,14 +7249,6 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 267061485}
     m_Modifications:
-    - target: {fileID: 388093903770434341, guid: 93349177a7272794abeecc3a55faec25, type: 3}
-      propertyPath: m_MotionVectors
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 388093903770434341, guid: 93349177a7272794abeecc3a55faec25, type: 3}
-      propertyPath: m_RenderingLayerMask
-      value: 1
-      objectReference: {fileID: 0}
     - target: {fileID: 595541496786092899, guid: 93349177a7272794abeecc3a55faec25, type: 3}
       propertyPath: m_AnchorMax.x
       value: 0
