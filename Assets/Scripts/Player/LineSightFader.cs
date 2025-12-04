@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class LineOfSightFader : MonoBehaviour
+public class LineSightFader : MonoBehaviour
 {
     [SerializeField] private Transform _cameraTransform;
     [SerializeField] private Transform _target;
