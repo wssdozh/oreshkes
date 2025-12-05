@@ -4,6 +4,8 @@ public class PlayerAnimator : MonoBehaviour
 {
     private static readonly int MoveHash = Animator.StringToHash("Move");
     private static readonly int JumpHash = Animator.StringToHash("Jump");
+    private static readonly int PointHash = Animator.StringToHash("Point");
+    private static readonly int IsFightHash = Animator.StringToHash("IsFight");
     private static readonly int AscendHash = Animator.StringToHash("IsAscending");
     private static readonly int FallHash = Animator.StringToHash("IsFalling");
     private static readonly int AttackHash = Animator.StringToHash("Attack");
@@ -49,6 +51,11 @@ public class PlayerAnimator : MonoBehaviour
         _animator.SetBool(FallHash, isFalling);
     }
 
+    public void TriggerPoint()
+    {
+        _animator.SetTrigger(PointHash);
+    }
+
     public void TriggerAttack()
     {
         _animator.SetTrigger(AttackHash);
@@ -57,6 +64,11 @@ public class PlayerAnimator : MonoBehaviour
     public void TriggerTakeDamage()
     {
         _animator.SetTrigger(TakeDamageHash);
+    }
+
+    public void SetFight(bool isFight)
+    {
+        _animator.SetBool(IsFightHash, isFight);
     }
 
     private void UpdateMove()

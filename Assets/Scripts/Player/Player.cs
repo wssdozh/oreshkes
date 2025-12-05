@@ -22,8 +22,6 @@ public class Player : MonoBehaviour
     [SerializeField] private InventoryDropper _inventoryDropper;
     [SerializeField] private PlayerAnimator _animator;
 
-
-
     [Header("Настройки")]
     [SerializeField] private float _timeBattle = 3f;
     [SerializeField] private float _jumpStaminaCost = 10f;
@@ -151,6 +149,8 @@ public class Player : MonoBehaviour
         if (_waitCoroutine != null)
             StopCoroutine(_waitCoroutine);
 
+        _animator.TriggerAttack();
+
         _waitCoroutine = StartCoroutine(Wait());
     }
 
@@ -188,15 +188,19 @@ public class Player : MonoBehaviour
     private void OnInteractPerformed(InputAction.CallbackContext ctx)
     {
         _interactor.TryInteract(gameObject);
+
+        _animator.TriggerPoint();
     }
 
     private IEnumerator Wait()
     {
         _isBattle = true;
+        _animator.SetFight(_isBattle);
 
         yield return new WaitForSeconds(_timeBattle);
 
         _isBattle = false;
+        _animator.SetFight(_isBattle);
     }
     
     private void OnMovePerformed(InputAction.CallbackContext ctx)
