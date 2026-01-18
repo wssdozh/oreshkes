@@ -435,7 +435,7 @@ MonoBehaviour:
   _height: 6
   _smoothSpeed: 5
   _mouseInfluence: 0.07
-  _positionOffset: {x: 0, y: 0, z: -3}
+  _positionOffset: {x: 0, y: 0, z: -3.5}
   _tiltAngle: 60
 --- !u!1 &1512025030539424559
 GameObject:
@@ -1465,7 +1465,7 @@ MonoBehaviour:
   _moveLerpSpeed: 3
   _walkMoveValue: 0.5
   _runMoveValue: 1
-  _moveDirectionDeadZone: 0.0001
+  _moveDirectionDeadZone: 0.001
 --- !u!114 &4803709847974141177
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1936,7 +1936,7 @@ MonoBehaviour:
     Controller: {fileID: 22100000, guid: 22f0999258184534d957c4e84d458298, type: 2}
   _defaultWeaponType: 0
   _weaponLayerIndex: 1
-  _switchBlendTime: 0.15
+  _switchBlendTime: 0.23
 --- !u!114 &100807586414554310
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2020,10 +2020,10 @@ MonoBehaviour:
   _movementGate: {fileID: 7431421974841183803}
   _jumpStaminaCost: 10
   _sprintStaminaCostPerSecond: 5
-  _moveStopDelaySeconds: 0.02
-  _attackEnterSeconds: 0.7
-  _attackExitSeconds: 0.7
-  _attackMovementMultiplier: 0.35
+  _moveStopDelaySeconds: 0.025
+  _attackEnterSeconds: 0.2
+  _attackExitSeconds: 0.2
+  _attackMovementMultiplier: 0.25
 --- !u!114 &7431421974841183803
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -11,7 +11,7 @@ public sealed class PlayerMeleeAttack
     private bool _isAttackInProgress;
     private bool _isHitPending;
     private bool _isAttackBuffered;
-    private bool _isBufferLocked;
+    private bool _isFollowUpAttackStarted;
 
     public PlayerMeleeAttack(
         Attacker attacker,
@@ -35,7 +35,20 @@ public sealed class PlayerMeleeAttack
     {
         if (_isAttackInProgress == true)
         {
-            return BufferAttack();
+            if (_isFollowUpAttackStarted == true)
+            {
+                return false;
+            }
+
+            if (_isAttackBuffered == true)
+            {
+                return false;
+            }
+
+            _isAttackBuffered = true;
+            _battleState.Touch();
+
+            return true;
         }
 
         if (_stamina.Value <= 0f)
@@ -57,41 +70,12 @@ public sealed class PlayerMeleeAttack
         _battleState.UnlockWeaponSwitchAndRefreshAnimator();
     }
 
-    private bool BufferAttack()
-    {
-        if (_isBufferLocked == true)
-        {
-            return false;
-        }
-
-        if (_isAttackBuffered == true)
-        {
-            return false;
-        }
-
-        _isAttackBuffered = true;
-        _isBufferLocked = true;
-
-        _battleState.Touch();
-
-        return true;
-    }
-
-    private bool TryStartChainedAttack()
-    {
-        if (_stamina.Value <= 0f)
-        {
-            return false;
-        }
-
-        StartAttackCore();
-        return true;
-    }
-
     private void StartAttackCore()
     {
         _isAttackInProgress = true;
         _isHitPending = true;
+        _isAttackBuffered = false;
+        _isFollowUpAttackStarted = false;
 
         _movementGate.BlockMovement();
 
@@ -136,26 +120,33 @@ public sealed class PlayerMeleeAttack
             return;
         }
 
+        if (_isAttackBuffered == true)
+        {
+            if (_isFollowUpAttackStarted == false)
+            {
+                _isAttackBuffered = false;
+                _isFollowUpAttackStarted = true;
+
+                if (_stamina.Value > 0f)
+                {
+                    _isAttackInProgress = true;
+                    _isHitPending = true;
+
+                    _animator.TriggerAttack();
+                    _battleState.Touch();
+
+                    return;
+                }
+            }
+        }
+
         _isAttackInProgress = false;
         _isHitPending = false;
 
         _animationEvents.Attacking -= OnAttackingFrame;
         _animationEvents.AttackEnded -= OnAttackEnded;
 
-        if (_isAttackBuffered == true)
-        {
-            _isAttackBuffered = false;
-
-            if (TryStartChainedAttack() == true)
-            {
-                return;
-            }
-        }
-
-        _isBufferLocked = false;
-
         _movementGate.AllowMovement();
-
         _battleState.UnlockWeaponSwitchAndRefreshAnimator();
     }
 
@@ -170,6 +161,6 @@ public sealed class PlayerMeleeAttack
         _isAttackInProgress = false;
         _isHitPending = false;
         _isAttackBuffered = false;
-        _isBufferLocked = false;
+        _isFollowUpAttackStarted = false;
     }
 }
