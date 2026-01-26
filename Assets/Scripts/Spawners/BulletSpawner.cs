@@ -18,7 +18,7 @@ public class BulletSpawner : Spawner<Bullet>
         Bullet bullet = Pool.Get();
         bullet.transform.SetPositionAndRotation(position, rotation);
         bullet.SetLayers(targetLayers);
-        bullet.GetComponent<BulletReturner>().Initialize(this);
+        bullet.GetComponent<AmmoReturner>().Initialize(this);
 
         return bullet;
     }
