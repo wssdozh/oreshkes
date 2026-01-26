@@ -1,8 +1,8 @@
 using UnityEngine;
 
-class BulletEffect : MonoBehaviour
+class AmmoEffect : MonoBehaviour
 {
-    [SerializeField] private BulletReturner _bulletReturner;
+    [SerializeField] private AmmoReturner _bulletReturner;
     [SerializeField] private ParticleEffect _particlePrefab;
 
     private Spawner<ParticleEffect> _particleEffectSpawner;
@@ -25,6 +25,8 @@ class BulletEffect : MonoBehaviour
     private void Play()
     {
         if (_particleEffectSpawner != null)
+        {
             _particleEffectSpawner.Spawn(transform.position);
+        }
     }
 }
