@@ -83,14 +83,12 @@ public abstract class Ammo : MonoBehaviour
 
         Action lifeEnded = LifeEnded;
 
-        if (lifeEnded == null)
+        if (lifeEnded == null == false)
         {
-            gameObject.SetActive(false);
-
-            return;
+            lifeEnded.Invoke();
         }
 
-        lifeEnded.Invoke();
+        gameObject.SetActive(false);
     }
 
     private bool IsInTargetLayers(int layer)

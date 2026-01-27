@@ -38,6 +38,8 @@ public sealed class PlayerCombatCore
 
     public void Tick(float deltaTime)
     {
+        _rangedFire.Tick();
+
         if (_battleState.Tick(deltaTime) == false)
         {
             return;
