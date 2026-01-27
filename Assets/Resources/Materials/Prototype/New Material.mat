@@ -8,13 +8,13 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: New Material
-  m_Shader: {fileID: -6465566751694194690, guid: 1fd221b60797c8342b1f8908be8a23d2, type: 3}
+  m_Shader: {fileID: -6465566751694194690, guid: 63b474e4388cb1d4a946af14931948b4, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
   m_InvalidKeywords: []
   m_LightmapFlags: 4
-  m_EnableInstancingVariants: 0
+  m_EnableInstancingVariants: 1
   m_DoubleSidedGI: 0
   m_CustomRenderQueue: -1
   stringTagMap: {}
@@ -25,7 +25,7 @@ Material:
     serializedVersion: 3
     m_TexEnvs:
     - _BaseMap:
-        m_Texture: {fileID: 2800000, guid: 02d0411c7d55c9e48922c765fbc4a8bd, type: 3}
+        m_Texture: {fileID: 2800000, guid: b7bb26fce91dd404ebd4e5f547601952, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 1, y: 1}
     - _BumpMap:
@@ -89,7 +89,7 @@ Material:
     - _AddPrecomputedVelocity: 0
     - _AlphaClip: 0
     - _AlphaToMask: 0
-    - _Ambient: 0
+    - _Ambient: 1
     - _Blend: 0
     - _BlendAlpha: 0
     - _BlendColor: 0
@@ -109,13 +109,14 @@ Material:
     - _GlossyReflections: 0
     - _Lightning_Cutoff: -0.2
     - _Metallic: 0.181
+    - _Mode: 0
     - _OcclusionStrength: 1
     - _Parallax: 0.005
     - _QueueControl: 0
     - _QueueOffset: 0
     - _ReceiveShadows: 1
     - _Shadow_Brightness: 0.67
-    - _Smoothnes: 0.353
+    - _Smoothnes: 0
     - _Smoothness: 0.5
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
@@ -123,6 +124,7 @@ Material:
     - _SrcBlendAlpha: 1
     - _Surface: 0
     - _Threeshold: 0
+    - _UVSec: 0
     - _WorkflowMode: 1
     - _XRMotionVectorsPass: 1
     - _ZWrite: 1

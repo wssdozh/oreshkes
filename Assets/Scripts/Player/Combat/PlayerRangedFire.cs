@@ -21,11 +21,22 @@ public sealed class PlayerRangedFire
         _attackStaminaCost = attackStaminaCost;
     }
 
+    public void Tick()
+    {
+        if (IsFiring == false)
+        {
+            return;
+        }
+
+        _battleState.Touch();
+    }
+
     public bool StartFiring()
     {
         if (IsFiring == true)
         {
             _battleState.Touch();
+
             return true;
         }
 
@@ -43,12 +54,14 @@ public sealed class PlayerRangedFire
         if (fireExecutor == null)
         {
             RestoreHoldAllowedIfNeeded(shouldRestoreHoldDisallowed);
+
             return false;
         }
 
         if (fireExecutor.TryStartFiring() == false)
         {
             RestoreHoldAllowedIfNeeded(shouldRestoreHoldDisallowed);
+
             return false;
         }
 

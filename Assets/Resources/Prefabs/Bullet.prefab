@@ -167,6 +167,7 @@ GameObject:
   - component: {fileID: 4344111331149057464}
   - component: {fileID: 8630705724268217545}
   - component: {fileID: 7805236088490247026}
+  - component: {fileID: 4410048117903338073}
   m_Layer: 10
   m_Name: Bullet
   m_TagString: Untagged
@@ -311,7 +312,6 @@ MonoBehaviour:
     m_Bits: 961
   _speed: 15
   _lifetimeSeconds: 5
-  _trailRenderer: {fileID: 8254358169590808527}
   _minDamage: 3
   _maxDamage: 6
   _impulseStrength: 3
@@ -342,3 +342,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BulletEffect
   _bulletReturner: {fileID: 8630705724268217545}
   _particlePrefab: {fileID: 8899160383858487772, guid: f0c85e1ad39fa734ea6a02d539d013e6, type: 3}
+--- !u!114 &4410048117903338073
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8640443465732932720}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a18df75bfe55feb4b8b0e3c16923790a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AmmoTrailRenderer
+  _ammo: {fileID: 4344111331149057464}
+  _trailRenderer: {fileID: 8254358169590808527}
