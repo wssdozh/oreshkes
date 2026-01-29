@@ -238,6 +238,7 @@ MonoBehaviour:
   _targetLayers:
     serializedVersion: 2
     m_Bits: 961
+  _maxAimTurnDegrees: 15
   _muzzle: {fileID: 4428332200358282627}
   _bulletPrefab: {fileID: 8755970277695282883, guid: 851fd8a41c4dc544ab4beda61ce8157e, type: 3}
 --- !u!114 &7664117757775277777

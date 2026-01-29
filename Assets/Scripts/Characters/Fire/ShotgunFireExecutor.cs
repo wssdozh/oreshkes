@@ -38,15 +38,7 @@ public class ShotgunFireExecutor : FireExecutor
 
     protected override bool TryFireInternal()
     {
-        if (HasAimPoint == true)
-        {
-            Vector3 direction = AimPoint - _muzzle.position;
-
-            if (direction.sqrMagnitude > 0.0001f)
-            {
-                _muzzle.rotation = Quaternion.LookRotation(direction);
-            }
-        }
+        RotateMuzzleToAimPoint(_muzzle);
 
         int pelletsPerShot = UnityEngine.Random.Range(_minPelletsPerShot, _maxPelletsPerShot + 1);
 

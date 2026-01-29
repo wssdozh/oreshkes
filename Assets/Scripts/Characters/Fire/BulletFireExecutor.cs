@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 public class BulletFireExecutor : FireExecutor
@@ -10,20 +11,18 @@ public class BulletFireExecutor : FireExecutor
     private void Start()
     {
         _bulletSpawner = SpawnerServiceLocator.Get<Ammo>(_bulletPrefab.name) as AmmoSpawner;
+
+        if (_bulletSpawner == null)
+        {
+            throw new InvalidOperationException(nameof(_bulletSpawner));
+        }
     }
 
     protected override bool TryFireInternal()
     {
-        if (HasAimPoint)
-        {
-            Vector3 direction = AimPoint - _muzzle.position;
-            
-            if (direction.sqrMagnitude > 0.0001f)
-                _muzzle.rotation = Quaternion.LookRotation(direction);
-        }
+        RotateMuzzleToAimPoint(_muzzle);
 
-        if (_bulletSpawner != null)
-            _bulletSpawner.Spawn(_muzzle.position, _muzzle.rotation, TargetLayers);
+        _bulletSpawner.Spawn(_muzzle.position, _muzzle.rotation, TargetLayers);
 
         return true;
     }
