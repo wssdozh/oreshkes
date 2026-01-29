@@ -4656,10 +4656,6 @@ PrefabInstance:
       propertyPath: _rectTransform
       value: 
       objectReference: {fileID: 231915024}
-    - target: {fileID: 8497980773154449553, guid: 49d458e9a6702ca4b9f226a4f1a14218, type: 3}
-      propertyPath: _shakePositionStrength
-      value: 0.1
-      objectReference: {fileID: 0}
     - target: {fileID: 8921466342968651583, guid: 49d458e9a6702ca4b9f226a4f1a14218, type: 3}
       propertyPath: m_LocalPosition.y
       value: 0.49
