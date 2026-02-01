@@ -16,7 +16,6 @@ public abstract class FireExecutor : MonoBehaviour
 
     protected float FireRatePerSecond => _fireRatePerSecond;
     protected LayerMask TargetLayers => _targetLayers;
-    protected float MaxAimAngleDegrees => _maxAimAngleDegrees;
 
     protected bool HasAimPoint { get; private set; }
     protected Vector3 AimPoint { get; private set; }
@@ -134,35 +133,26 @@ public abstract class FireExecutor : MonoBehaviour
             return;
         }
 
-        Vector3 referenceUp = transform.up;
-        Vector3 referenceForward = transform.forward;
+        Vector3 upAxis = transform.up;
 
-        Vector3 desiredDirectionOnPlane = Vector3.ProjectOnPlane(desiredDirection, referenceUp);
-        Vector3 referenceForwardOnPlane = Vector3.ProjectOnPlane(referenceForward, referenceUp);
+        Vector3 flatDirection = Vector3.ProjectOnPlane(desiredDirection, upAxis);
 
-        if (desiredDirectionOnPlane.sqrMagnitude <= 0.0001f)
+        if (flatDirection.sqrMagnitude <= 0.0001f)
         {
             return;
         }
 
-        if (referenceForwardOnPlane.sqrMagnitude <= 0.0001f)
-        {
-            return;
-        }
+        Quaternion yawRotation = Quaternion.LookRotation(flatDirection, upAxis);
 
-        Vector3 normalizedDesiredDirection = desiredDirectionOnPlane.normalized;
-        Vector3 normalizedReferenceForward = referenceForwardOnPlane.normalized;
+        Vector3 rightAxis = yawRotation * Vector3.right;
 
-        float maxAngleRadians = _maxAimAngleDegrees * Mathf.Deg2Rad;
+        float pitchDegrees = Vector3.SignedAngle(flatDirection, desiredDirection, rightAxis);
 
-        Vector3 clampedDirection = Vector3.RotateTowards(
-            normalizedReferenceForward,
-            normalizedDesiredDirection,
-            maxAngleRadians,
-            0f
-        );
+        float clampedPitchDegrees = Mathf.Clamp(pitchDegrees, -_maxAimAngleDegrees, _maxAimAngleDegrees);
 
-        muzzle.rotation = Quaternion.LookRotation(clampedDirection, referenceUp);
+        Quaternion pitchRotation = Quaternion.AngleAxis(clampedPitchDegrees, Vector3.right);
+
+        muzzle.rotation = yawRotation * pitchRotation;
     }
 
     private IEnumerator FiringCoroutine()
