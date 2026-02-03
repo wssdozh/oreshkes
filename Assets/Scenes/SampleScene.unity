@@ -2654,6 +2654,7 @@ MonoBehaviour:
   _targetLayers:
     serializedVersion: 2
     m_Bits: 449
+  _maxAimAngleDegrees: 30
   _muzzle: {fileID: 630241527}
   _pelletPrefab: {fileID: 4344111331149057464, guid: 13bda12239d3d1d4a9c7ec696a064ee0, type: 3}
   _minPelletsPerShot: 6
@@ -4536,6 +4537,10 @@ PrefabInstance:
       propertyPath: _rectTransform
       value: 
       objectReference: {fileID: 231915024}
+    - target: {fileID: 591744987671708976, guid: 49d458e9a6702ca4b9f226a4f1a14218, type: 3}
+      propertyPath: _capacity
+      value: 3
+      objectReference: {fileID: 0}
     - target: {fileID: 924725540843438586, guid: 49d458e9a6702ca4b9f226a4f1a14218, type: 3}
       propertyPath: '_componentsToDisable.Array.data[6]'
       value: 
@@ -4616,6 +4621,14 @@ PrefabInstance:
       propertyPath: _buttonRevival
       value: 
       objectReference: {fileID: 1505686501}
+    - target: {fileID: 4141626659660128127, guid: 49d458e9a6702ca4b9f226a4f1a14218, type: 3}
+      propertyPath: m_CellSize.x
+      value: 100
+      objectReference: {fileID: 0}
+    - target: {fileID: 4141626659660128127, guid: 49d458e9a6702ca4b9f226a4f1a14218, type: 3}
+      propertyPath: m_CellSize.y
+      value: 100
+      objectReference: {fileID: 0}
     - target: {fileID: 4547585065114705616, guid: 49d458e9a6702ca4b9f226a4f1a14218, type: 3}
       propertyPath: _pauseController
       value: 
