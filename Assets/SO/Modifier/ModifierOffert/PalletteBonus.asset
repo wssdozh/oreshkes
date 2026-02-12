@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: PalletteBonus
   m_EditorClassIdentifier: Assembly-CSharp::ModifierOffer
   _title: "\u0414\u0440\u043E\u0431\u0438+"
-  _icon: {fileID: 0}
+  _icon: {fileID: -1368728570, guid: f5f6277b3d23c214fb5f2f2bb98ba57f, type: 3}
   _price: 0
   _modifiers:
   - {fileID: 11400000, guid: df27ea492a6959143b13344d5c56e1dd, type: 2}
