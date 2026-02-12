@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: a2776537e5e2a96479131d4fabfdf765
+guid: 225900d2e7ac71c4fa51208966c221b2
 TextureImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -39,17 +39,17 @@ TextureImporter:
     mipBias: 0
     wrapU: 1
     wrapV: 1
-    wrapW: 1
+    wrapW: 0
   nPOTScale: 0
   lightmap: 0
   compressionQuality: 50
   spriteMode: 2
-  spriteExtrude: 15
+  spriteExtrude: 1
   spriteMeshType: 0
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
   spritePixelsToUnits: 100
-  spriteBorder: {x: 226, y: 265, z: 228, w: 233}
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
   spriteGenerateFallbackPhysicsShape: 1
   alphaUsage: 1
   alphaIsTransparency: 1
@@ -69,7 +69,7 @@ TextureImporter:
   platformSettings:
   - serializedVersion: 4
     buildTarget: DefaultTexturePlatform
-    maxTextureSize: 512
+    maxTextureSize: 256
     resizeAlgorithm: 0
     textureFormat: -1
     textureCompression: 1
@@ -97,23 +97,23 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Card Legend_0
+      name: firerate_0
       rect:
         serializedVersion: 2
-        x: 96
-        y: 145
-        width: 830
-        height: 766
+        x: 187
+        y: 292
+        width: 650
+        height: 462
       alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 128, y: 120, z: 129, w: 119}
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: 0
       bones: []
-      spriteID: 75a66f28082314c4e965b287fee69a3c
-      internalID: 621736658
+      spriteID: 59b0e0c3a13b1e243a494692f910b5db
+      internalID: 1932712227
       vertices: []
       indices: 
       edges: []
@@ -123,7 +123,7 @@ TextureImporter:
     physicsShape: []
     bones: []
     spriteID: 5e97eb03825dee720800000000000000
-    internalID: 1537655665
+    internalID: 0
     vertices: []
     indices: 
     edges: []
@@ -132,7 +132,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Card Legend_0: 621736658
+      firerate_0: 1932712227
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
