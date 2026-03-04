@@ -27,6 +27,7 @@ public sealed class LevelCorridorBuilder : MonoBehaviour
     [SerializeField, Min(0f)] private float _wallSideOffsetInUnits = 0f;
 
     [SerializeField] private Vector3 _wallLocalOffset;
+    [SerializeField] private bool _enableColliders = true;
 
     private bool _hasCachedFloorSize;
     private Vector2 _cachedFloorSizeInUnits;
@@ -75,7 +76,9 @@ public sealed class LevelCorridorBuilder : MonoBehaviour
         }
 
 
-        float widthUnits = corridorWidthInBlocks * _blockSize;
+        float horizontalScale = GetHorizontalScale(parent);
+        float verticalScale = GetVerticalScale(parent);
+        float widthUnits = corridorWidthInBlocks * _blockSize * horizontalScale;
 
         float lengthUnits;
         Vector3 center;
@@ -96,17 +99,17 @@ public sealed class LevelCorridorBuilder : MonoBehaviour
 
 
         GameObject corridorRoot = new GameObject("Corridor");
-        corridorRoot.transform.SetParent(parent, false);
         corridorRoot.transform.position = center;
         corridorRoot.transform.rotation = rotation;
+        corridorRoot.transform.SetParent(parent, true);
 
-        BuildFloor(corridorRoot.transform, lengthUnits, widthUnits);
+        BuildFloor(corridorRoot.transform, lengthUnits, widthUnits, horizontalScale, verticalScale);
 
         if (_wallPrefab != null)
-            BuildWalls(corridorRoot.transform, lengthUnits, widthUnits);
+            BuildWalls(corridorRoot.transform, lengthUnits, widthUnits, horizontalScale, verticalScale);
     }
 
-    private void BuildFloor(Transform corridorTransform, float lengthUnits, float widthUnits)
+    private void BuildFloor(Transform corridorTransform, float lengthUnits, float widthUnits, float horizontalScale, float verticalScale)
     {
         Vector2 baseSizeInUnits = GetFloorBaseSizeInUnits();
 
@@ -122,7 +125,7 @@ public sealed class LevelCorridorBuilder : MonoBehaviour
 
         GameObject floor = Instantiate(_floorPrefab, corridorTransform);
 
-        floor.transform.localPosition = _floorLocalOffset;
+        floor.transform.localPosition = ScaleLocalOffset(_floorLocalOffset, horizontalScale, verticalScale);
         floor.transform.localRotation = Quaternion.identity;
 
         Vector3 baseScale = floor.transform.localScale;
@@ -131,6 +134,8 @@ public sealed class LevelCorridorBuilder : MonoBehaviour
         float scaleZ = widthUnits / baseWidth;
 
         floor.transform.localScale = new Vector3(baseScale.x * scaleX, baseScale.y, baseScale.z * scaleZ);
+
+        EnableColliders(floor);
     }
 
     private Vector2 GetFloorBaseSizeInUnits()
@@ -188,22 +193,23 @@ public sealed class LevelCorridorBuilder : MonoBehaviour
         DestroyImmediate(probe);
     }
 
-    private void BuildWalls(Transform corridorTransform, float lengthUnits, float widthUnits)
+    private void BuildWalls(Transform corridorTransform, float lengthUnits, float widthUnits, float horizontalScale, float verticalScale)
     {
         float halfWidth = widthUnits * 0.5f;
 
-        float sideOffset = halfWidth + _wallSideOffsetInUnits;
+        float sideOffset = halfWidth + (_wallSideOffsetInUnits * horizontalScale);
 
-        BuildWall(corridorTransform, lengthUnits, sideOffset);
+        BuildWall(corridorTransform, lengthUnits, sideOffset, horizontalScale, verticalScale);
 
-        BuildWall(corridorTransform, lengthUnits, -sideOffset);
+        BuildWall(corridorTransform, lengthUnits, -sideOffset, horizontalScale, verticalScale);
     }
 
-    private void BuildWall(Transform corridorTransform, float lengthUnits, float localZ)
+    private void BuildWall(Transform corridorTransform, float lengthUnits, float localZ, float horizontalScale, float verticalScale)
     {
         GameObject wall = Instantiate(_wallPrefab, corridorTransform);
 
-        wall.transform.localPosition = new Vector3(0f, 0f, localZ) + _wallLocalOffset;
+        Vector3 wallLocalOffset = ScaleLocalOffset(_wallLocalOffset, horizontalScale, verticalScale);
+        wall.transform.localPosition = new Vector3(0f, 0f, localZ) + wallLocalOffset;
         wall.transform.localRotation = Quaternion.identity;
 
         Vector3 baseScale = wall.transform.localScale;
@@ -219,8 +225,74 @@ public sealed class LevelCorridorBuilder : MonoBehaviour
 
 
         float scaleX = lengthUnits / baseLength;
-        float scaleY = _wallHeightInUnits / baseHeight;
+        float scaleY = (_wallHeightInUnits * verticalScale) / baseHeight;
 
         wall.transform.localScale = new Vector3(baseScale.x * scaleX, baseScale.y * scaleY, baseScale.z);
+
+        EnableColliders(wall);
+    }
+
+    private float GetHorizontalScale(Transform parent)
+    {
+        Vector3 lossyScale = parent.lossyScale;
+        float horizontalScale = (Mathf.Abs(lossyScale.x) + Mathf.Abs(lossyScale.z)) * 0.5f;
+
+        if (horizontalScale <= 0.0001f)
+        {
+            return 1f;
+        }
+
+        return horizontalScale;
+    }
+
+    private float GetVerticalScale(Transform parent)
+    {
+        float verticalScale = Mathf.Abs(parent.lossyScale.y);
+
+        if (verticalScale <= 0.0001f)
+        {
+            return 1f;
+        }
+
+        return verticalScale;
+    }
+
+    private Vector3 ScaleLocalOffset(Vector3 localOffset, float horizontalScale, float verticalScale)
+    {
+        float scaledOffsetX = localOffset.x * horizontalScale;
+        float scaledOffsetY = localOffset.y * verticalScale;
+        float scaledOffsetZ = localOffset.z * horizontalScale;
+
+        return new Vector3(scaledOffsetX, scaledOffsetY, scaledOffsetZ);
+    }
+
+    private void EnableColliders(GameObject targetObject)
+    {
+        if (_enableColliders == false)
+        {
+            return;
+        }
+
+        Collider[] colliders = targetObject.GetComponentsInChildren<Collider>(true);
+
+        if (colliders != null && colliders.Length > 0)
+        {
+            for (int colliderIndex = 0; colliderIndex < colliders.Length; colliderIndex++)
+            {
+                Collider collider = colliders[colliderIndex];
+
+                if (collider == null)
+                {
+                    continue;
+                }
+
+                collider.enabled = true;
+            }
+
+            return;
+        }
+
+        BoxCollider newCollider = targetObject.AddComponent<BoxCollider>();
+        newCollider.enabled = true;
     }
 }

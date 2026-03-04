@@ -4,10 +4,10 @@ using UnityEngine.Pool;
 
 public abstract class Spawner<T> : Spawner where T : MonoBehaviour
 {
-    [Header("РќРµРѕР±С…РѕРґРёРјС‹Рµ РєРѕРјРїРѕРЅРµРЅС‚С‹: ")]
+    [Header("Required Components:")]
     [SerializeField] protected T Prefab;
 
-    [Header("РќР°СЃС‚СЂРѕР№РєРё РїСѓР»Р°: ")]
+    [Header("Pool Settings:")]
     [SerializeField] protected int PoolSize = 5;
 
     protected List<T> ActiveObjects = new List<T>();
@@ -17,7 +17,7 @@ public abstract class Spawner<T> : Spawner where T : MonoBehaviour
 
     protected virtual void Awake()
     {
-        Debug.Log("Р·Р°СЂРµРіР°РЅ: " + Prefab.name);
+        Debug.Log("Spawner registered: " + Prefab.name);
 
         SpawnerServiceLocator.Register(Prefab.name, this);
 

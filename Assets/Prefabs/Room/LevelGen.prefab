@@ -41,6 +41,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7312079363675327127}
   - component: {fileID: 1539516662376536076}
+  - component: {fileID: 4817328054312691558}
   m_Layer: 0
   m_Name: LevelGen
   m_TagString: Untagged
@@ -58,8 +59,8 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 34.89884, y: 4, z: 14.66893}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
+  m_LocalScale: {x: 0.5, y: 0.5, z: 0.5}
+  m_ConstrainProportionsScale: 1
   m_Children:
   - {fileID: 2679585313219043316}
   - {fileID: 3767421390256361801}
@@ -83,6 +84,12 @@ MonoBehaviour:
   _roomPrefabLibrary: {fileID: 11400000, guid: 1457c061938feab46bcd0627ff9dd317, type: 2}
   _corridorBuilder: {fileID: 2632561195082893375}
   _levelSeed: 434
+  _generateOnAwake: 1
+  _randomSeedOnAwake: 1
+  _runtimeAttempts: 8
+  _seedMin: 0
+  _seedMax: 2147483647
+  _removeLegacyEnvironment: 1
   _generationAttempts: 5
   _maximumRoomRegenerateAttempts: 8
   _corridorMinimumLengthInBlocks: 6
@@ -98,6 +105,23 @@ MonoBehaviour:
   _roomGridStepInBlocks: 0.5
   _treasurePerCombatNumerator: 1
   _treasurePerCombatDenominator: 2
+--- !u!114 &4817328054312691558
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6025506535198833129}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9f743cad91834b56a54f1d8f87a83a22, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::StartRoomCenterer
+  _levelGenerator: {fileID: 1539516662376536076}
+  _playerRoot: {fileID: 0}
+  _playerBody: {fileID: 0}
+  _bodyHeight: 1.5
+  _syncFrames: 3
 --- !u!1 &6447186613324292721
 GameObject:
   m_ObjectHideFlags: 0
