@@ -107,6 +107,18 @@ public sealed class RoomContentSpawner : MonoBehaviour
         );
     }
 
+    public void SetBlockSize(float blockSize)
+    {
+        if (blockSize <= 0.0001f)
+        {
+            _blockSize = 0.0001f;
+
+            return;
+        }
+
+        _blockSize = blockSize;
+    }
+
     public void Clear()
     {
         ClearChildren(_objectsRoot);
@@ -602,6 +614,42 @@ public sealed class RoomContentSpawner : MonoBehaviour
         return new Vector3(localPositionX, localPositionY, localPositionZ);
     }
 
+    private void ApplyOriginalWorldScale(Transform objectTransform)
+    {
+        if (objectTransform == null)
+        {
+            return;
+        }
+
+        Transform parentTransform = objectTransform.parent;
+
+        if (parentTransform == null)
+        {
+            return;
+        }
+
+        Vector3 parentLossyScale = parentTransform.lossyScale;
+        float parentScaleX = GetSafeParentScale(parentLossyScale.x);
+        float parentScaleY = GetSafeParentScale(parentLossyScale.y);
+        float parentScaleZ = GetSafeParentScale(parentLossyScale.z);
+
+        Vector3 localScale = objectTransform.localScale;
+
+        objectTransform.localScale = new Vector3(localScale.x / parentScaleX, localScale.y / parentScaleY, localScale.z / parentScaleZ);
+    }
+
+    private float GetSafeParentScale(float parentScale)
+    {
+        float absoluteParentScale = Mathf.Abs(parentScale);
+
+        if (absoluteParentScale <= 0.0001f)
+        {
+            return 1f;
+        }
+
+        return absoluteParentScale;
+    }
+
     private List<Vector2Int> SpawnResources(
         RoomTypeProfile roomTypeProfile,
         Vector3Int roomSizeInBlocks,
@@ -800,6 +848,7 @@ public sealed class RoomContentSpawner : MonoBehaviour
 
             instance.transform.localPosition = GetLocalPosition(chosenCell);
             instance.transform.localRotation = Quaternion.identity;
+            ApplyOriginalWorldScale(instance.transform);
 
             floorOccupancy.OccupiedFloorCells.Add(chosenCell);
         }
@@ -1040,6 +1089,7 @@ public sealed class RoomContentSpawner : MonoBehaviour
 
             instance.transform.localPosition = GetLocalPosition(bestCell);
             instance.transform.localRotation = Quaternion.identity;
+            ApplyOriginalWorldScale(instance.transform);
 
             floorOccupancy.OccupiedFloorCells.Add(bestCell);
             enemyCells.Add(bestCell);
@@ -1088,6 +1138,7 @@ public sealed class RoomContentSpawner : MonoBehaviour
 
             instance.transform.localPosition = GetLocalPosition(chosenCell);
             instance.transform.localRotation = Quaternion.identity;
+            ApplyOriginalWorldScale(instance.transform);
 
             floorOccupancy.OccupiedFloorCells.Add(chosenCell);
             enemyCells.Add(chosenCell);

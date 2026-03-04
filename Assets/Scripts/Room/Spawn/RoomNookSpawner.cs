@@ -131,10 +131,23 @@ public sealed class RoomNookSpawner : MonoBehaviour
             GameObject instance = Object.Instantiate(config.Prefab, _nooksRoot);
             instance.transform.localPosition = GetLocalPosition(chosenCell);
             instance.transform.localRotation = Quaternion.identity;
+            ApplyOriginalWorldScale(instance.transform);
 
             floorOccupancy.OccupiedFloorCells.Add(chosenCell);
             placed.Add(new PlacedNook(configIndex, chosenCell));
         }
+    }
+
+    public void SetBlockSize(float blockSize)
+    {
+        if (blockSize <= 0.0001f)
+        {
+            _blockSize = 0.0001f;
+
+            return;
+        }
+
+        _blockSize = blockSize;
     }
 
     public void Clear()
@@ -904,5 +917,41 @@ public sealed class RoomNookSpawner : MonoBehaviour
         float localPositionY = 1f * _blockSize;
 
         return new Vector3(localPositionX, localPositionY, localPositionZ);
+    }
+
+    private void ApplyOriginalWorldScale(Transform objectTransform)
+    {
+        if (objectTransform == null)
+        {
+            return;
+        }
+
+        Transform parentTransform = objectTransform.parent;
+
+        if (parentTransform == null)
+        {
+            return;
+        }
+
+        Vector3 parentLossyScale = parentTransform.lossyScale;
+        float parentScaleX = GetSafeParentScale(parentLossyScale.x);
+        float parentScaleY = GetSafeParentScale(parentLossyScale.y);
+        float parentScaleZ = GetSafeParentScale(parentLossyScale.z);
+
+        Vector3 localScale = objectTransform.localScale;
+
+        objectTransform.localScale = new Vector3(localScale.x / parentScaleX, localScale.y / parentScaleY, localScale.z / parentScaleZ);
+    }
+
+    private float GetSafeParentScale(float parentScale)
+    {
+        float absoluteParentScale = Mathf.Abs(parentScale);
+
+        if (absoluteParentScale <= 0.0001f)
+        {
+            return 1f;
+        }
+
+        return absoluteParentScale;
     }
 }

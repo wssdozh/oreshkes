@@ -168,6 +168,8 @@ public sealed class RoomGenerator : MonoBehaviour
 
         System.Random random = new System.Random(_cachedSeed);
 
+        SyncDecorationScale();
+
         HashSet<Vector2Int> reservedFloorCells = _roomPassagePlanner.CreateReservedFloorCells(_roomSizeInBlocks, _cachedDoorPlans, _roomTypeProfile);
         RoomFloorOccupancy floorOccupancy = _roomInteriorBlockFiller.Fill(_roomSizeInBlocks, reservedFloorCells, _roomTypeProfile, random);
 
@@ -252,5 +254,13 @@ public sealed class RoomGenerator : MonoBehaviour
 
             _doorMarkers.Add(marker);
         }
+    }
+
+    private void SyncDecorationScale()
+    {
+        float blockSize = _roomShellBuilder.BlockSize;
+
+        _roomContentSpawner.SetBlockSize(blockSize);
+        _roomNookSpawner.SetBlockSize(blockSize);
     }
 }
