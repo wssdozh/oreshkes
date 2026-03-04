@@ -1,5 +1,6 @@
 ﻿using System;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public sealed class LevelGenerator : MonoBehaviour
 {
@@ -16,6 +17,14 @@ public sealed class LevelGenerator : MonoBehaviour
 
     [Header("Seed")]
     [SerializeField] private int _levelSeed = 1;
+
+    [Header("Runtime")]
+    [SerializeField] private bool _generateOnAwake = true;
+    [SerializeField] private bool _randomSeedOnAwake = true;
+    [SerializeField, Min(1)] private int _runtimeAttempts = 8;
+    [SerializeField, Min(0)] private int _seedMin = 0;
+    [SerializeField, Min(0)] private int _seedMax = int.MaxValue;
+    [SerializeField] private bool _removeLegacyEnvironment = true;
 
     [Header("Attempts")]
     [SerializeField, Min(1)] private int _generationAttempts = 3;
@@ -57,6 +66,20 @@ public sealed class LevelGenerator : MonoBehaviour
     private readonly LevelCorridorExecutor _corridorExecutor = new LevelCorridorExecutor();
     private readonly LevelRoomFinalizer _roomFinalizer = new LevelRoomFinalizer();
 
+    public event Action GenerationCompleted;
+
+    private void Awake()
+    {
+        if (_generateOnAwake == false)
+        {
+            return;
+        }
+
+        CleanupLegacyEnvironment();
+
+        TryGenerateRuntime();
+    }
+
     [ContextMenu("Generate")]
     public void Generate()
     {
@@ -86,7 +109,14 @@ public sealed class LevelGenerator : MonoBehaviour
             System.Random random = new System.Random(attemptSeed);
 
             if (TryGenerateOnce(random) == true)
+            {
+                if (Application.isPlaying == true)
+                {
+                    InvokeGenerationCompletedEvent();
+                }
+
                 return;
+            }
 
         }
 
@@ -135,5 +165,194 @@ public sealed class LevelGenerator : MonoBehaviour
         _roomFinalizer.FinalizeInteriors(_generationContext);
 
         return true;
+    }
+
+    private void TryGenerateRuntime()
+    {
+        int attempts = Mathf.Clamp(_runtimeAttempts, 1, 64);
+
+        for (int attemptIndex = 0; attemptIndex < attempts; attemptIndex++)
+        {
+
+            if (_randomSeedOnAwake == true)
+            {
+                _levelSeed = GetRandomSeed();
+            }
+
+            Generate();
+
+            if (_roomsRoot.childCount > 0)
+            {
+                return;
+            }
+
+        }
+
+        throw new InvalidOperationException(nameof(_levelSeed));
+    }
+
+    private void InvokeGenerationCompletedEvent()
+    {
+        Action generationCompleted = GenerationCompleted;
+
+        if (generationCompleted == null)
+        {
+            return;
+        }
+
+        generationCompleted.Invoke();
+    }
+
+    private int GetRandomSeed()
+    {
+        int minSeed = Mathf.Max(_seedMin, 0);
+        int maxSeed = Mathf.Max(_seedMax, minSeed);
+
+        if (maxSeed == int.MaxValue)
+        {
+
+            if (minSeed == int.MaxValue)
+            {
+                return int.MaxValue;
+            }
+
+            return UnityEngine.Random.Range(minSeed, int.MaxValue);
+
+        }
+
+        return UnityEngine.Random.Range(minSeed, maxSeed + 1);
+    }
+
+    private void CleanupLegacyEnvironment()
+    {
+        if (_removeLegacyEnvironment == false)
+        {
+            return;
+        }
+
+        Scene activeScene = gameObject.scene;
+        GameObject[] rootObjects = activeScene.GetRootGameObjects();
+
+        for (int rootIndex = rootObjects.Length - 1; rootIndex >= 0; rootIndex--)
+        {
+
+            GameObject rootObject = rootObjects[rootIndex];
+
+            if (rootObject == gameObject)
+            {
+                continue;
+            }
+
+            bool isWorldRoot = string.Equals(rootObject.name, "--------WORLD-------------", StringComparison.Ordinal);
+            bool isPropsRoot = string.Equals(rootObject.name, "--------PROPS--------", StringComparison.Ordinal);
+
+            if (isWorldRoot == false && isPropsRoot == false)
+            {
+                continue;
+            }
+
+            Destroy(rootObject);
+
+        }
+    }
+
+    public Vector3 GetStartRoomCenter()
+    {
+        PlacedRoomInfo startRoomInfo = FindStartRoomInfo();
+
+        if (startRoomInfo == null)
+        {
+            throw new InvalidOperationException(nameof(startRoomInfo));
+        }
+
+        if (startRoomInfo.Node == null)
+        {
+            throw new InvalidOperationException(nameof(startRoomInfo.Node));
+        }
+
+        if (startRoomInfo.Node.RoomInstance == null)
+        {
+            throw new InvalidOperationException(nameof(startRoomInfo.Node.RoomInstance));
+        }
+
+        return ResolveStartRoomCenter(startRoomInfo);
+    }
+
+    private PlacedRoomInfo FindStartRoomInfo()
+    {
+        for (int roomIndex = 0; roomIndex < _generationContext.PlacedRooms.Count; roomIndex++)
+        {
+
+            PlacedRoomInfo placedRoomInfo = _generationContext.PlacedRooms[roomIndex];
+
+            if (placedRoomInfo == null)
+            {
+                continue;
+            }
+
+            LevelNode levelNode = placedRoomInfo.Node;
+
+            if (levelNode == null)
+            {
+                continue;
+            }
+
+            if (levelNode.RoomType == RoomType.Start)
+            {
+                return placedRoomInfo;
+            }
+
+        }
+
+        return null;
+    }
+
+    private Vector3 ResolveStartRoomCenter(PlacedRoomInfo startRoomInfo)
+    {
+        Vector3 roomCenterPosition = startRoomInfo.SolidBounds.center;
+        Transform roomTransform = startRoomInfo.Node.RoomInstance.transform;
+        Transform floorRoot = roomTransform.Find("FloorBlockRoot");
+
+        if (floorRoot == null)
+        {
+            roomCenterPosition.y = startRoomInfo.SolidBounds.min.y;
+
+            return roomCenterPosition;
+        }
+
+        roomCenterPosition.y = ResolveCenterHeight(floorRoot, roomCenterPosition);
+
+        return roomCenterPosition;
+    }
+
+    private float ResolveCenterHeight(Transform floorRoot, Vector3 roomCenterPosition)
+    {
+        if (floorRoot.childCount == 0)
+        {
+            return floorRoot.position.y;
+        }
+
+        Transform nearestFloorTransform = floorRoot.GetChild(0);
+        float nearestSqrDistance = float.MaxValue;
+
+        for (int childIndex = 0; childIndex < floorRoot.childCount; childIndex++)
+        {
+
+            Transform floorBlockTransform = floorRoot.GetChild(childIndex);
+            Vector3 floorBlockPosition = floorBlockTransform.position;
+
+            float distanceX = floorBlockPosition.x - roomCenterPosition.x;
+            float distanceZ = floorBlockPosition.z - roomCenterPosition.z;
+            float sqrDistance = (distanceX * distanceX) + (distanceZ * distanceZ);
+
+            if (sqrDistance < nearestSqrDistance)
+            {
+                nearestSqrDistance = sqrDistance;
+                nearestFloorTransform = floorBlockTransform;
+            }
+
+        }
+
+        return nearestFloorTransform.position.y;
     }
 }
