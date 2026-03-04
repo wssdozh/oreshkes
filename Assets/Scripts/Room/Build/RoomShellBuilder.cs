@@ -47,6 +47,8 @@ public sealed class RoomShellBuilder : MonoBehaviour
 
     [SerializeField] private float _floorSurfaceYOffset = 0f;
 
+    public float BlockSize => _blockSize;
+
     public void BuildShell(Vector3Int roomSizeInBlocks, IReadOnlyList<RoomDoorPlan> doorPlans)
     {
         Clear();

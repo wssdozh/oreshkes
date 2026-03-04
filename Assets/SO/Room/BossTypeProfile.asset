@@ -23,7 +23,7 @@ MonoBehaviour:
   _randomYawRotation: 1
   _enemySpawnCountRange: {x: 1, y: 1}
   _enemyPrefabs:
-  - _prefab: {fileID: 3538862290574425012, guid: 90e570a938053394ca51ecfbdd288ffb, type: 3}
+  - _prefab: {fileID: 625229030526185096, guid: fa4493f117e180d41826086377115b5a, type: 3}
     _weight: 1
     _guaranteed: 0
   _objectSpawnCountRange: {x: 7, y: 15}
@@ -32,7 +32,7 @@ MonoBehaviour:
     _weight: 1
     _guaranteed: 0
   _nookPrefabs:
-  - _prefab: {fileID: 7492242292902632512, guid: 0c72f885545a7bb4bb39da479ce65c33, type: 3}
+  - _prefab: {fileID: 4886392652990026178, guid: 5ea691f870f2399428249cd4b0746cc3, type: 3}
     _weight: 1
     _guaranteed: 0
     _countRange: {x: 3, y: 6}
