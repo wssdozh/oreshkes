@@ -13,9 +13,10 @@ public sealed class EnemyMove : MonoBehaviour
     [SerializeField] private float _steerSpeed = 180f;
     [SerializeField] private float _moveScale = 0.6f;
     [SerializeField] private float _runScaleFactor = 1.25f;
-    [SerializeField] private float _moveInputSpeed = 3f;
+    [SerializeField] private float _moveInputSpeed = 1.2f;
 
     private Vector3 _moveDirection;
+    private Vector3 _targetDirection;
     private Vector2 _moveInput;
     private bool _isMoving;
     private bool _isRunning;
@@ -59,6 +60,8 @@ public sealed class EnemyMove : MonoBehaviour
 
     private void FixedUpdate()
     {
+        UpdateMoveDirection();
+
         Vector2 targetMoveInput = Vector2.zero;
         bool isSprinting = false;
 
@@ -110,7 +113,13 @@ public sealed class EnemyMove : MonoBehaviour
             desiredDirection.Normalize();
         }
 
-        _moveDirection = desiredDirection;
+        _targetDirection = desiredDirection;
+
+        if (_moveDirection.sqrMagnitude <= ZeroThreshold)
+        {
+            _moveDirection = desiredDirection;
+        }
+
         _isMoving = true;
     }
 
@@ -123,6 +132,7 @@ public sealed class EnemyMove : MonoBehaviour
     {
         _isMoving = false;
         _isRunning = false;
+        _targetDirection = Vector3.zero;
         _characterMover.OnSprint(false);
     }
 
@@ -131,9 +141,45 @@ public sealed class EnemyMove : MonoBehaviour
         _isMoving = false;
         _isRunning = false;
         _moveDirection = Vector3.zero;
+        _targetDirection = Vector3.zero;
         _moveInput = Vector2.zero;
         _characterMover.OnSprint(false);
         _characterMover.ForceStop();
+    }
+
+    private void UpdateMoveDirection()
+    {
+        if (_isMoving == false)
+        {
+            _moveDirection = Vector3.zero;
+
+            return;
+        }
+
+        if (_targetDirection.sqrMagnitude <= ZeroThreshold)
+        {
+            _moveDirection = Vector3.zero;
+
+            return;
+        }
+
+        if (_moveDirection.sqrMagnitude <= ZeroThreshold)
+        {
+            _moveDirection = _targetDirection;
+
+            return;
+        }
+
+        float maxRadiansDelta = _steerSpeed * Mathf.Deg2Rad * Time.fixedDeltaTime;
+        Vector3 nextDirection = Vector3.RotateTowards(_moveDirection, _targetDirection, maxRadiansDelta, 0f);
+        nextDirection.y = 0f;
+
+        if (nextDirection.sqrMagnitude > 1f)
+        {
+            nextDirection.Normalize();
+        }
+
+        _moveDirection = nextDirection;
     }
 
     private Vector2 GetMoveInput(Vector3 direction)

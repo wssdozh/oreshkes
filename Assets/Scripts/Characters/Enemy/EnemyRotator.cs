@@ -9,7 +9,7 @@ public sealed class EnemyRotator : MonoBehaviour
     [SerializeField] private Rigidbody _rigidbody;
 
     [Header("Settings")]
-    [SerializeField] private float _rotationSpeed = 300f;
+    [SerializeField] private float _rotationSpeed = 240f;
 
     private void Awake()
     {
