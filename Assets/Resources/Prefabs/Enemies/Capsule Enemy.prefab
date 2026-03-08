@@ -235,7 +235,7 @@ MonoBehaviour:
   _characterMover: {fileID: 924719609261421840}
   _steerSpeed: 140
   _moveScale: 0.8
-  _moveInputSpeed: 2.4
+  _moveInputSpeed: 1.2
 --- !u!114 &9123886638528049474
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -250,7 +250,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnemyRotator
   _rotationRoot: {fileID: 0}
   _rigidbody: {fileID: 6695405994909000428}
-  _rotationSpeed: 300
+  _rotationSpeed: 240
 --- !u!114 &7366375601686959552
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -285,11 +285,13 @@ MonoBehaviour:
   _enemyMove: {fileID: 9108123925921890562}
   _enemyRotator: {fileID: 9123886638528049474}
   _attacker: {fileID: 7366375601686959552}
-  _attackDistance: 1.25
+  _attackDistance: 3.5
+  _attackGap: 0
   _attackAngle: 35
-  _combatRadius: 1.2
-  _combatChaos: 0.25
-  _combatTolerance: 0.2
+  _combatRadius: 0.55
+  _combatChaos: 0.04
+  _combatTolerance: 0.05
+  _fightExitGap: 0.12
   _idleMoveMin: 4.5
   _idleMoveMax: 7.5
   _idleWaitMin: 2.2
@@ -315,10 +317,10 @@ MonoBehaviour:
   _probeAngle: 25
   _wallGap: 0.12
   _avoidWeight: 1.05
-  _separationRadius: 0.8
-  _separationWeight: 1.1
-  _slotAngle: 22
-  _slotRadius: 3
-  _slotCount: 5
+  _separationRadius: 1.35
+  _separationWeight: 2.2
+  _slotAngle: 12
+  _slotRadius: 1.2
+  _slotCount: 7
   _isAttackZoneVisible: 1
   _isMoveGizmoVisible: 1

@@ -16,6 +16,7 @@ public sealed class EnemySteering
     private const float AgentSpeed = 3.5f;
     private const float NavRecoverGap = 6f;
     private const float NavSnapGap = 0.35f;
+    private const float SlotOffsetMin = 0.01f;
 
     private readonly Transform _root;
     private readonly EnemyMove _enemyMove;
@@ -166,8 +167,9 @@ public sealed class EnemySteering
         }
 
         Vector3 moveDirection = GetMoveDirection(currentPoint);
+        Vector3 steerDirection = GetSteerDirection(currentPoint, moveDirection);
 
-        if (moveDirection.sqrMagnitude <= MinDistance)
+        if (steerDirection.sqrMagnitude <= MinDistance)
         {
             _enemyMove.StopMove();
 
@@ -184,7 +186,7 @@ public sealed class EnemySteering
             return false;
         }
 
-        Vector3 currentLookPoint = currentPoint + moveDirection;
+        Vector3 currentLookPoint = currentPoint + steerDirection;
 
         if (isLookLocked)
         {
@@ -192,7 +194,7 @@ public sealed class EnemySteering
         }
 
         _enemyRotator.RotateToPoint(currentLookPoint);
-        _enemyMove.SetDirection(moveDirection);
+        _enemyMove.SetDirection(steerDirection);
 
         return true;
     }
@@ -218,7 +220,15 @@ public sealed class EnemySteering
         }
 
         Vector3 targetDirection = toTarget.normalized;
-        Vector3 slotPoint = GetSlotPoint(currentPoint, targetPoint, targetDirection, ringDistance);
+        float slotOffset = GetSlotOffset(targetPoint);
+        float chaseDistance = ringDistance;
+
+        if (Mathf.Abs(slotOffset) > SlotOffsetMin)
+        {
+            chaseDistance = GetChaseDistance(toTarget.magnitude, ringDistance);
+        }
+
+        Vector3 slotPoint = GetSlotPoint(currentPoint, targetPoint, targetDirection, chaseDistance, slotOffset);
         Vector3 safePoint = GetSafePoint(slotPoint, _probeRadius);
         float stopDistance = Mathf.Max(ringTolerance, 0.05f);
 
@@ -711,6 +721,40 @@ public sealed class EnemySteering
         return Vector3.zero;
     }
 
+    private Vector3 GetSteerDirection(Vector3 currentPoint, Vector3 moveDirection)
+    {
+        Vector3 baseDirection = GetFlatDirection(moveDirection);
+
+        if (baseDirection.sqrMagnitude <= MinDistance)
+        {
+            return Vector3.zero;
+        }
+
+        Vector3 desiredDirection = baseDirection;
+        Vector3 separationDirection = GetSeparationDirection(currentPoint, baseDirection);
+
+        if (separationDirection.sqrMagnitude > MinDistance)
+        {
+            desiredDirection += separationDirection * _separationWeight;
+        }
+
+        Vector3 avoidDirection = GetAvoidDirection(currentPoint, baseDirection);
+
+        if (avoidDirection.sqrMagnitude > MinDistance)
+        {
+            desiredDirection += avoidDirection * _avoidWeight;
+        }
+
+        Vector3 steerDirection = GetFlatDirection(desiredDirection);
+
+        if (steerDirection.sqrMagnitude <= MinDistance)
+        {
+            return baseDirection;
+        }
+
+        return steerDirection;
+    }
+
     private Vector3 GetAvoidDirection(Vector3 currentPoint, Vector3 moveDirection)
     {
         if (_obstacleMask.value == 0)
@@ -737,7 +781,7 @@ public sealed class EnemySteering
         avoidDirection += GetProbePush(currentPoint, leftDirection, _probeDistance * 0.85f) * 0.75f;
         avoidDirection += GetProbePush(currentPoint, rightDirection, _probeDistance * 0.85f) * 0.75f;
 
-        return GetFlatDirection(avoidDirection);
+        return GetFlatVector(avoidDirection);
     }
 
     private Vector3 GetProbePush(Vector3 currentPoint, Vector3 probeDirection, float probeDistance)
@@ -852,15 +896,27 @@ public sealed class EnemySteering
                                 uniqueCount += 1;
                             }
 
-                            Vector3 awayDirection = currentPoint - GetFlatPoint(otherEnemy.transform.position);
+                            Vector3 otherPoint = GetFlatPoint(otherEnemy.transform.position);
+                            Vector3 awayDirection = currentPoint - otherPoint;
                             float distance = awayDirection.magnitude;
 
                             if (distance > MinDistance)
                             {
                                 Vector3 lateralDirection = awayDirection / distance;
+                                float frontWeight = 1f;
 
                                 if (moveDirection.sqrMagnitude > MinDistance)
                                 {
+                                    Vector3 toOtherDirection = (otherPoint - currentPoint) / distance;
+                                    frontWeight = Mathf.Clamp01(Vector3.Dot(moveDirection, toOtherDirection));
+
+                                    if (frontWeight <= MinDistance)
+                                    {
+                                        hitIndex += 1;
+
+                                        continue;
+                                    }
+
                                     lateralDirection = Vector3.ProjectOnPlane(lateralDirection, moveDirection);
                                     lateralDirection = GetFlatDirection(lateralDirection);
 
@@ -872,6 +928,7 @@ public sealed class EnemySteering
                                 }
 
                                 float weight = 1f - Mathf.Clamp01(distance / _separationRadius);
+                                weight *= frontWeight;
                                 separationDirection += lateralDirection * weight;
                             }
                         }
@@ -882,7 +939,7 @@ public sealed class EnemySteering
             hitIndex += 1;
         }
 
-        return GetFlatDirection(separationDirection);
+        return GetFlatVector(separationDirection);
     }
 
     private Vector3 RotateDirection(Vector3 direction, float angle)
@@ -917,15 +974,34 @@ public sealed class EnemySteering
         return false;
     }
 
-    private Vector3 GetSlotPoint(Vector3 currentPoint, Vector3 targetPoint, Vector3 targetDirection, float ringDistance)
+    private Vector3 GetSlotPoint(Vector3 currentPoint, Vector3 targetPoint, Vector3 targetDirection, float ringDistance, float slotOffset)
     {
         Vector3 fromTargetDirection = -targetDirection;
-        float slotOffset = GetSlotOffset(targetPoint);
         Vector3 slotDirection = RotateDirection(fromTargetDirection, slotOffset);
         Vector3 slotPoint = targetPoint + (slotDirection * ringDistance);
         slotPoint.y = currentPoint.y;
 
         return slotPoint;
+    }
+
+    private float GetChaseDistance(float targetDistance, float ringDistance)
+    {
+        float maxDistance = Mathf.Max(_slotRadius, ringDistance);
+        float blendMaxDistance = maxDistance + ringDistance;
+
+        if (targetDistance >= blendMaxDistance)
+        {
+            return maxDistance;
+        }
+
+        if (targetDistance <= ringDistance)
+        {
+            return ringDistance;
+        }
+
+        float blend = Mathf.InverseLerp(ringDistance, blendMaxDistance, targetDistance);
+
+        return Mathf.Lerp(ringDistance, maxDistance, blend);
     }
 
     private float GetSlotOffset(Vector3 targetPoint)
@@ -950,10 +1026,11 @@ public sealed class EnemySteering
             return 0f;
         }
 
+        float searchRadius = Mathf.Max(_slotRadius * 2f, _separationRadius * 2f);
         Vector3 origin = targetPoint + (Vector3.up * _probeHeight);
         int hitCount = Physics.OverlapSphereNonAlloc(
             origin,
-            _slotRadius,
+            searchRadius,
             _allyBuffer,
             _allyMask,
             QueryTriggerInteraction.Ignore);
@@ -1236,6 +1313,18 @@ public sealed class EnemySteering
         point.y = _root.position.y;
 
         return point;
+    }
+
+    private Vector3 GetFlatVector(Vector3 direction)
+    {
+        direction.y = 0f;
+
+        if (direction.sqrMagnitude <= MinDistance)
+        {
+            return Vector3.zero;
+        }
+
+        return Vector3.ClampMagnitude(direction, 1f);
     }
 
     private Vector3 GetFlatDirection(Vector3 direction)

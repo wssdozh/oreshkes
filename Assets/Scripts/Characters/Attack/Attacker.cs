@@ -4,6 +4,7 @@ using System.Collections;
 public class Attacker : MonoBehaviour
 {
     private const int TargetBufferSize = 16;
+    private const float DirectionThreshold = 0.0001f;
 
     [SerializeField] private AttackData _attackData;
     [SerializeField] private float _hitForce = 6f;
@@ -18,14 +19,18 @@ public class Attacker : MonoBehaviour
 
     public bool PerformAttack()
     {
+        return PerformAttack(transform.forward);
+    }
+
+    public bool PerformAttack(Vector3 attackDirection)
+    {
         if (_isOnCooldown)
         {
             return false;
         }
 
         int damage = _attackData.GetDamage();
-
-        int hitCount = _attackData.AttackShape.GetTargets(transform, _attackData.AttackRange, _attackData.HitLayers, _targetBuffer);
+        int hitCount = FillTargets(attackDirection);
 
         if (hitCount == 0)
         {
@@ -124,6 +129,34 @@ public class Attacker : MonoBehaviour
         return true;
     }
 
+    public bool CanHitTarget(Transform targetTransform, Vector3 attackDirection)
+    {
+        if (targetTransform == null)
+        {
+            return false;
+        }
+
+        int hitCount = FillTargets(attackDirection);
+        int hitIndex = 0;
+
+        while (hitIndex < hitCount)
+        {
+            Collider hit = _targetBuffer[hitIndex];
+
+            if (hit != null)
+            {
+                if (IsTargetMatch(targetTransform, hit.transform))
+                {
+                    return true;
+                }
+            }
+
+            hitIndex += 1;
+        }
+
+        return false;
+    }
+
     private IEnumerator StartCooldown()
     {
         _isOnCooldown = true;
@@ -151,12 +184,69 @@ public class Attacker : MonoBehaviour
         }
 
         Gizmos.color = Color.red;
-        _attackData.AttackShape.DrawGizmos(transform, _attackData.AttackRange);
+        Vector3 attackDirection = GetAttackDirection(transform.forward);
+        _attackData.AttackShape.DrawGizmos(transform.position, attackDirection, _attackData.AttackRange);
 
-        Vector3 attackPoint = transform.position + (transform.forward * _attackData.AttackRange);
+        Vector3 attackPoint = transform.position + (attackDirection * _attackData.AttackRange);
 
         Gizmos.color = new Color(1f, 0.6f, 0.2f);
         Gizmos.DrawLine(transform.position, attackPoint);
         Gizmos.DrawWireSphere(attackPoint, _gizmoPointSize);
+    }
+
+    private int FillTargets(Vector3 attackDirection)
+    {
+        Vector3 resolvedDirection = GetAttackDirection(attackDirection);
+
+        return _attackData.AttackShape.GetTargets(
+            transform.position,
+            resolvedDirection,
+            _attackData.AttackRange,
+            _attackData.HitLayers,
+            _targetBuffer);
+    }
+
+    private bool IsTargetMatch(Transform targetTransform, Transform hitTransform)
+    {
+        if (hitTransform == targetTransform)
+        {
+            return true;
+        }
+
+        if (hitTransform.IsChildOf(targetTransform))
+        {
+            return true;
+        }
+
+        if (targetTransform.IsChildOf(hitTransform))
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+    private Vector3 GetAttackDirection(Vector3 attackDirection)
+    {
+        attackDirection.y = 0f;
+
+        if (attackDirection.sqrMagnitude <= DirectionThreshold)
+        {
+            Vector3 transformForward = transform.forward;
+            transformForward.y = 0f;
+
+            if (transformForward.sqrMagnitude <= DirectionThreshold)
+            {
+                return Vector3.forward;
+            }
+
+            transformForward.Normalize();
+
+            return transformForward;
+        }
+
+        attackDirection.Normalize();
+
+        return attackDirection;
     }
 }

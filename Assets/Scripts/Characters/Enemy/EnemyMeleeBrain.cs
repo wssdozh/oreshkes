@@ -27,17 +27,18 @@ public sealed class EnemyMeleeBrain : MonoBehaviour
     [SerializeField] private Attacker _attacker;
 
     [Header("Combat")]
-    [SerializeField] private float _attackDistance = 1.5f;
+    [SerializeField] private float _attackDistance = 3.5f;
+    [SerializeField] private float _attackGap = 0f;
     [SerializeField] private float _attackAngle = 20f;
-    [SerializeField] private float _combatRadius = 1.2f;
-    [SerializeField] private float _combatChaos = 0.25f;
-    [SerializeField] private float _combatTolerance = 0.2f;
-    [SerializeField] private float _fightExitGap = 0.35f;
+    [SerializeField] private float _combatRadius = 0.55f;
+    [SerializeField] private float _combatChaos = 0.04f;
+    [SerializeField] private float _combatTolerance = 0.05f;
+    [SerializeField] private float _fightExitGap = 0.12f;
     [SerializeField] private float _runStartDistance = 4.4f;
     [SerializeField] private float _runStopDistance = 3.1f;
-    [SerializeField] private float _slotAngle = 22f;
-    [SerializeField] private float _slotRadius = 3f;
-    [SerializeField] private int _slotCount = 5;
+    [SerializeField] private float _slotAngle = 12f;
+    [SerializeField] private float _slotRadius = 1.2f;
+    [SerializeField] private int _slotCount = 7;
 
     [Header("Idle")]
     [SerializeField] private float _idleMoveMin = 4f;
@@ -63,8 +64,8 @@ public sealed class EnemyMeleeBrain : MonoBehaviour
     [SerializeField] private float _probeDistance = 0.9f;
     [SerializeField] private float _probeAngle = 25f;
     [SerializeField] private float _avoidWeight = 1.05f;
-    [SerializeField] private float _separationRadius = 0.8f;
-    [SerializeField] private float _separationWeight = 1.1f;
+    [SerializeField] private float _separationRadius = 1.35f;
+    [SerializeField] private float _separationWeight = 2.2f;
 
     [Header("Gizmo")]
     [SerializeField] private bool _isAttackZoneVisible = true;
@@ -126,6 +127,16 @@ public sealed class EnemyMeleeBrain : MonoBehaviour
         if (_attackDistance <= 0f)
         {
             throw new InvalidOperationException(nameof(_attackDistance));
+        }
+
+        if (_attackGap < 0f)
+        {
+            throw new InvalidOperationException(nameof(_attackGap));
+        }
+
+        if (_attackGap >= _attackDistance)
+        {
+            throw new InvalidOperationException(nameof(_attackGap));
         }
 
         if (_attackAngle < 0f)
@@ -305,6 +316,8 @@ public sealed class EnemyMeleeBrain : MonoBehaviour
 
     private void FixedUpdate()
     {
+        Transform currentTarget = GetVisibleTarget();
+
         if (_enemy.IsDead)
         {
             return;
@@ -312,6 +325,7 @@ public sealed class EnemyMeleeBrain : MonoBehaviour
 
         if (_enemySteering.ResolveOverlap())
         {
+            RotateTarget(currentTarget);
             ResetMoveStuck();
 
             return;
@@ -319,9 +333,10 @@ public sealed class EnemyMeleeBrain : MonoBehaviour
 
         UpdateLastSeenPoint();
 
-        if (_targetVision.IsTargetVisible)
+        if (currentTarget != null)
         {
-            ProcessVisibleTarget();
+            RotateTarget(currentTarget);
+            ProcessVisibleTarget(currentTarget);
 
             return;
         }
@@ -445,17 +460,8 @@ public sealed class EnemyMeleeBrain : MonoBehaviour
         Gizmos.DrawWireSphere(targetPoint, PointGizmoSize);
     }
 
-    private void ProcessVisibleTarget()
+    private void ProcessVisibleTarget(Transform currentTarget)
     {
-        Transform currentTarget = _targetVision.CurrentTarget;
-
-        if (currentTarget == null)
-        {
-            ProcessHiddenTarget();
-
-            return;
-        }
-
         _isIdleWalking = false;
         _hasSearchPoint = false;
         _searchStep = 0;
@@ -481,7 +487,7 @@ public sealed class EnemyMeleeBrain : MonoBehaviour
         }
 
         _enemyMove.SetRun(false);
-        ProcessFight(targetPoint, distance);
+        ProcessFight(currentTarget, targetPoint, distance);
     }
 
     private void ProcessHiddenTarget()
@@ -705,13 +711,13 @@ public sealed class EnemyMeleeBrain : MonoBehaviour
         _enemySteering.Stop();
     }
 
-    private void ProcessFight(Vector3 targetPoint, float distance)
+    private void ProcessFight(Transform currentTarget, Vector3 targetPoint, float distance)
     {
         _state = EnemyState.Fight;
         _enemyMove.SetRun(false);
-        _enemyMove.ForceStop();
+        _enemyMove.StopMove();
 
-        if (TryAttack(targetPoint, distance))
+        if (TryAttack(currentTarget, targetPoint, distance))
         {
             ResetMoveStuck();
 
@@ -777,9 +783,9 @@ public sealed class EnemyMeleeBrain : MonoBehaviour
         return false;
     }
 
-    private bool TryAttack(Vector3 targetPoint, float distance)
+    private bool TryAttack(Transform currentTarget, Vector3 targetPoint, float distance)
     {
-        if (distance > _attackDistance)
+        if (distance > GetAttackStartDistance())
         {
             return false;
         }
@@ -795,9 +801,14 @@ public sealed class EnemyMeleeBrain : MonoBehaviour
             return true;
         }
 
+        if (_attacker.CanHitTarget(currentTarget, attackDirection) == false)
+        {
+            return false;
+        }
+
         _enemySteering.LookToPoint(targetPoint);
 
-        if (_attacker.PerformAttack() == false)
+        if (_attacker.PerformAttack(attackDirection) == false)
         {
             return false;
         }
@@ -850,12 +861,7 @@ public sealed class EnemyMeleeBrain : MonoBehaviour
 
     private void UpdateLastSeenPoint()
     {
-        if (_targetVision.IsTargetVisible == false)
-        {
-            return;
-        }
-
-        Transform currentTarget = _targetVision.CurrentTarget;
+        Transform currentTarget = GetVisibleTarget();
 
         if (currentTarget == null)
         {
@@ -1078,6 +1084,11 @@ public sealed class EnemyMeleeBrain : MonoBehaviour
             chaseDistance += _fightExitGap;
         }
 
+        if (chaseDistance > GetAttackStartDistance())
+        {
+            chaseDistance = GetAttackStartDistance();
+        }
+
         if (distance > chaseDistance)
         {
             return true;
@@ -1088,8 +1099,15 @@ public sealed class EnemyMeleeBrain : MonoBehaviour
 
     private float GetFightRadius()
     {
+        float attackStartDistance = GetAttackStartDistance();
+        float maxFightRadius = Mathf.Max(MinFightRadius, attackStartDistance - MinFightGap);
         float minRadius = Mathf.Max(MinFightRadius, _combatRadius - _combatChaos);
-        float maxRadius = Mathf.Min(_combatRadius + _combatChaos, _attackDistance - MinFightGap);
+        float maxRadius = Mathf.Min(_combatRadius + _combatChaos, maxFightRadius);
+
+        if (minRadius > maxFightRadius)
+        {
+            minRadius = maxFightRadius;
+        }
 
         if (maxRadius < minRadius)
         {
@@ -1107,6 +1125,32 @@ public sealed class EnemyMeleeBrain : MonoBehaviour
         }
 
         return _lastSeenPoint;
+    }
+
+    private Transform GetVisibleTarget()
+    {
+        if (_targetVision.IsTargetVisible == false)
+        {
+            return null;
+        }
+
+        return _targetVision.CurrentTarget;
+    }
+
+    private void RotateTarget(Transform currentTarget)
+    {
+        if (currentTarget == null)
+        {
+            return;
+        }
+
+        Vector3 targetPoint = GetFlatPoint(currentTarget.position);
+        _enemyRotator.RotateToPoint(targetPoint);
+    }
+
+    private float GetAttackStartDistance()
+    {
+        return _attackDistance - _attackGap;
     }
 
     private float GetSearchStride()
