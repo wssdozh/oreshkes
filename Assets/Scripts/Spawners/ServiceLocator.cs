@@ -50,6 +50,33 @@ public sealed class SpawnerServiceLocator
         return spawner;
     }
 
+    public static Spawner<T> Find<T>(string key) where T : MonoBehaviour
+    {
+        if (string.IsNullOrEmpty(key))
+        {
+            return null;
+        }
+
+        Type sourceType = typeof(T);
+
+        if (_sourcesByType.TryGetValue(sourceType, out Dictionary<string, object> sources) == false)
+        {
+            return null;
+        }
+
+        if (sources.TryGetValue(key, out object spawnerObject) == false)
+        {
+            return null;
+        }
+
+        if (spawnerObject is Spawner<T> spawner == false)
+        {
+            return null;
+        }
+
+        return spawner;
+    }
+
     public static void Unregister<T>(string key) where T : MonoBehaviour
     {
         if (string.IsNullOrEmpty(key))

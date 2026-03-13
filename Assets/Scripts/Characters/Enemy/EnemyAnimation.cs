@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 [DisallowMultipleComponent]
 public sealed class EnemyAnimation : MonoBehaviour
@@ -8,7 +9,8 @@ public sealed class EnemyAnimation : MonoBehaviour
     [SerializeField] private PlayerAnimator _animator;
     [SerializeField] private AnimatorSwitcher _animatorSwitcher;
     [SerializeField] private EnemyMove _enemyMove;
-    [SerializeField] private EnemyMeleeBrain _enemyMeleeBrain;
+    [FormerlySerializedAs("_enemyMeleeBrain")]
+    [SerializeField] private MonoBehaviour _enemyBrain;
     [SerializeField] private Health _health;
     [SerializeField] private Enemy _enemy;
     [SerializeField] private WeaponHolder _weaponHolder;
@@ -16,6 +18,8 @@ public sealed class EnemyAnimation : MonoBehaviour
     [Header("Weapon")]
     [SerializeField] private BasePickup _weaponPrefab;
     [SerializeField] private WeaponType _weaponType = WeaponType.None;
+
+    private IEnemyBrain _enemyBrainState;
 
     private void Awake()
     {
@@ -34,9 +38,9 @@ public sealed class EnemyAnimation : MonoBehaviour
             throw new InvalidOperationException(nameof(_enemyMove));
         }
 
-        if (_enemyMeleeBrain == null)
+        if (_enemyBrain == null)
         {
-            throw new InvalidOperationException(nameof(_enemyMeleeBrain));
+            throw new InvalidOperationException(nameof(_enemyBrain));
         }
 
         if (_health == null)
@@ -53,6 +57,8 @@ public sealed class EnemyAnimation : MonoBehaviour
         {
             throw new InvalidOperationException(nameof(_weaponHolder));
         }
+
+        ResolveBrain();
     }
 
     private void OnEnable()
@@ -124,7 +130,7 @@ public sealed class EnemyAnimation : MonoBehaviour
 
     private bool IsFight()
     {
-        EnemyState enemyState = _enemyMeleeBrain.State;
+        EnemyState enemyState = _enemyBrainState.State;
 
         if (enemyState == EnemyState.Chase)
         {
@@ -188,5 +194,66 @@ public sealed class EnemyAnimation : MonoBehaviour
         }
 
         _weaponHolder.Clear();
+    }
+
+    private void ResolveBrain()
+    {
+        IEnemyBrain directBrain = GetBrain(_enemyBrain);
+
+        if (directBrain != null && _enemyBrain.isActiveAndEnabled)
+        {
+            _enemyBrainState = directBrain;
+
+            return;
+        }
+
+        MonoBehaviour[] brainSources = GetComponentsInParent<MonoBehaviour>(true);
+        int brainIndex = 0;
+
+        while (brainIndex < brainSources.Length)
+        {
+            MonoBehaviour brainSource = brainSources[brainIndex];
+            IEnemyBrain enemyBrain = GetBrain(brainSource);
+
+            if (enemyBrain != null && brainSource.isActiveAndEnabled)
+            {
+                _enemyBrain = brainSource;
+                _enemyBrainState = enemyBrain;
+
+                return;
+            }
+
+            brainIndex += 1;
+        }
+
+        brainIndex = 0;
+
+        while (brainIndex < brainSources.Length)
+        {
+            MonoBehaviour brainSource = brainSources[brainIndex];
+            IEnemyBrain enemyBrain = GetBrain(brainSource);
+
+            if (enemyBrain != null)
+            {
+                _enemyBrain = brainSource;
+                _enemyBrainState = enemyBrain;
+
+                return;
+            }
+
+            brainIndex += 1;
+        }
+
+        throw new InvalidOperationException(nameof(_enemyBrain));
+    }
+
+    private IEnemyBrain GetBrain(MonoBehaviour brainSource)
+    {
+        if (brainSource is IEnemyBrain enemyBrain)
+        {
+            return enemyBrain;
+        }
+
+        return null;
     }
 }
