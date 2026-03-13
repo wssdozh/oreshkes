@@ -31,6 +31,10 @@ MonoBehaviour:
     _weight: 3
     _spawnHeight: 1.8
     _guaranteed: 0
+  - _prefab: {fileID: 3220131145214470877, guid: c5b2d1d433ee45d8b92068065d4d2d3a, type: 3}
+    _weight: 2
+    _spawnHeight: 1.8
+    _guaranteed: 0
   - _prefab: {fileID: 2988643586977455420, guid: 93470d33be65f054a84a4b6a491dbd4d, type: 3}
     _weight: 2
     _spawnHeight: 0.8

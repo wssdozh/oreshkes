@@ -18,6 +18,31 @@ public class WeaponHolder : MonoBehaviour
 
     public event Action Changed;
 
+    private void Update()
+    {
+        if (_hasPendingPickupSpawner == false)
+        {
+            return;
+        }
+
+        if (IsHoldAllowed == false)
+        {
+            return;
+        }
+
+        if (IsSwitchLocked)
+        {
+            return;
+        }
+
+        if (_pickup != null)
+        {
+            return;
+        }
+
+        EquipInternal(_pendingPickupSpawnerKey);
+    }
+
     public void SetHoldAllowed(bool isHoldAllowed)
     {
 
@@ -99,7 +124,12 @@ public class WeaponHolder : MonoBehaviour
     private void EquipInternal(string pickupSpawnerKey)
     {
 
-        Spawner<BasePickup> pickupSpawner = SpawnerServiceLocator.Get<BasePickup>(pickupSpawnerKey);
+        Spawner<BasePickup> pickupSpawner = SpawnerServiceLocator.Find<BasePickup>(pickupSpawnerKey);
+
+        if (pickupSpawner == null)
+        {
+            return;
+        }
 
         if (_pickupSpawner == pickupSpawner && _pickup != null)
         {

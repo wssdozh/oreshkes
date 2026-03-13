@@ -2,7 +2,7 @@ using System;
 using UnityEngine;
 
 [DisallowMultipleComponent]
-public sealed class EnemyMeleeBrain : MonoBehaviour
+public sealed class EnemyMeleeBrain : MonoBehaviour, IEnemyBrain
 {
     private const int SearchStepsCount = 4;
     private const int IdlePointTryCount = 16;
