@@ -133,6 +133,8 @@ public sealed class RoomContentSpawner : MonoBehaviour
             resourceCenters,
             random
         );
+
+        EnsureCombatLock();
     }
 
     public void SetBlockSize(float blockSize)
@@ -972,6 +974,23 @@ public sealed class RoomContentSpawner : MonoBehaviour
         }
 
         _roomRuntimeState.gameObject.AddComponent<EnemyRoomAlert>();
+    }
+
+    private void EnsureCombatLock()
+    {
+        if (_roomRuntimeState == null)
+        {
+            return;
+        }
+
+        RoomCombatLock roomCombatLock = _roomRuntimeState.GetComponent<RoomCombatLock>();
+
+        if (roomCombatLock == null)
+        {
+            roomCombatLock = _roomRuntimeState.gameObject.AddComponent<RoomCombatLock>();
+        }
+
+        roomCombatLock.Setup(_roomRuntimeState, _blockSize);
     }
 
     private GameObject InstantiateOnCell(GameObject prefab, Transform rootTransform, Vector2Int floorCell, float spawnHeight)
