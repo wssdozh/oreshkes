@@ -4,9 +4,9 @@ using UnityEngine;
 [DisallowMultipleComponent]
 public sealed class EnemyDroneBrain : MonoBehaviour, IEnemyBrain, IEnemyAlert
 {
-    private const float AlertDelay = 0.9f;
-    private const float AlertGap = 1.75f;
-    private const int IdlePointTryCount = 6;
+    private const float AlertDelay = 3f;
+    private const float AlertGap = 2.25f;
+    private const int IdlePointTryCount = 10;
     private const float ZeroThreshold = 0.0001f;
     private const float OrbitTurnAngle = 90f;
 
@@ -34,9 +34,9 @@ public sealed class EnemyDroneBrain : MonoBehaviour, IEnemyBrain, IEnemyAlert
     [SerializeField] private float _searchReachDistance = 0.35f;
 
     [Header("Idle")]
-    [SerializeField] private float _idleRadius = 2.8f;
-    [SerializeField] private float _idleWaitMin = 0.35f;
-    [SerializeField] private float _idleWaitMax = 0.8f;
+    [SerializeField] private float _idleRadius = 4.6f;
+    [SerializeField] private float _idleWaitMin = 0.12f;
+    [SerializeField] private float _idleWaitMax = 0.28f;
     [SerializeField] private float _idleReachDistance = 0.5f;
 
     private System.Random _random;
@@ -624,7 +624,7 @@ public sealed class EnemyDroneBrain : MonoBehaviour, IEnemyBrain, IEnemyAlert
     {
         _hasIdlePoint = false;
         _idleTimer = 0f;
-        _alertTimer = 0f;
+        _alertTimer = AlertDelay;
         ResetStrafe();
         _strafeTimer = GetRandomValue(0.05f, 0.2f);
         AlertRoom(_targetVision.CurrentTargetPoint);

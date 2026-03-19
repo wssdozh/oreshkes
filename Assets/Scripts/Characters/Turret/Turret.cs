@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using UnityEngine;
 
@@ -6,22 +7,33 @@ public class Turret : MonoBehaviour, IEnemyAlert
     private const float AlertTime = 2.5f;
     private const float AlertGap = 1f;
 
-    [Header("Зависимости")]
+    [Header("Р—Р°РІРёСЃРёРјРѕСЃС‚Рё")]
+    [SerializeField] private Health _health;
     [SerializeField] private TargetVision _targetVision;
     [SerializeField] private TargetRotator _targetRotator;
     [SerializeField] private IdleRotator _idleRotator;
     [SerializeField] private FireExecutor _fireExecutor;
 
-    [Header("Настройки")]
+    [Header("РќР°СЃС‚СЂРѕР№РєРё")]
     [SerializeField] private float _fireDelaySeconds = 0.25f;
 
     private Vector3 _alertPoint;
     private bool _hasAlertPoint;
+    private bool _isDead;
     private float _alertTimer;
     private Coroutine _fireDelayCoroutine;
 
+    public event Action Died;
+
+    public bool IsDead => _isDead;
+
     public bool ApplyAlert(Vector3 point)
     {
+        if (_isDead)
+        {
+            return false;
+        }
+
         if (_targetVision.IsTargetVisible)
         {
             return false;
@@ -43,15 +55,31 @@ public class Turret : MonoBehaviour, IEnemyAlert
         return true;
     }
 
+    private void Awake()
+    {
+        if (_health == null)
+        {
+            _health = GetComponent<Health>();
+        }
+
+        if (_health == null)
+        {
+            throw new InvalidOperationException(nameof(_health));
+        }
+    }
+
     private void OnEnable()
     {
+        _health.Ended += OnDied;
         _targetVision.TargetDetected += OnTargetFound;
         _targetVision.TargetCleared += OnTargetLost;
+        _isDead = false;
         SetIdleState();
     }
 
     private void OnDisable()
     {
+        _health.Ended -= OnDied;
         _targetVision.TargetDetected -= OnTargetFound;
         _targetVision.TargetCleared -= OnTargetLost;
 
@@ -70,6 +98,11 @@ public class Turret : MonoBehaviour, IEnemyAlert
 
     private void Update()
     {
+        if (_isDead)
+        {
+            return;
+        }
+
         if (_targetVision.IsTargetVisible)
         {
             _hasAlertPoint = false;
@@ -186,5 +219,32 @@ public class Turret : MonoBehaviour, IEnemyAlert
 
         _fireDelayCoroutine = null;
         _fireExecutor.StartFiring();
+    }
+
+    private void OnDied()
+    {
+        if (_isDead)
+        {
+            return;
+        }
+
+        _isDead = true;
+        StopFireDelay();
+        _hasAlertPoint = false;
+        _alertTimer = 0f;
+        _fireExecutor.StopFiring();
+        _fireExecutor.ClearAimPoint();
+        _targetRotator.ClearAimPoint();
+        _targetRotator.enabled = false;
+        _idleRotator.enabled = false;
+
+        Action died = Died;
+
+        if (died != null)
+        {
+            died.Invoke();
+        }
+
+        enabled = false;
     }
 }

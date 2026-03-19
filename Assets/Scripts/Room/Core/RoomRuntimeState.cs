@@ -113,6 +113,16 @@ public sealed class RoomRuntimeState : MonoBehaviour
         return (distanceX * distanceX) + (distanceZ * distanceZ);
     }
 
+    public Bounds GetRoomBounds()
+    {
+        if (_isReady == false)
+        {
+            return new Bounds(transform.position, Vector3.zero);
+        }
+
+        return _roomBounds;
+    }
+
     public void SetRoomActive(bool isActive)
     {
         if (gameObject.activeSelf == isActive)

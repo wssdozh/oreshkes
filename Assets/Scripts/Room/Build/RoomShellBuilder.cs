@@ -48,6 +48,8 @@ public sealed class RoomShellBuilder : MonoBehaviour
     [SerializeField] private float _floorSurfaceYOffset = 0f;
 
     public float BlockSize => _blockSize;
+    public int PostHeightInBlocks => _postHeightInBlocks;
+    public Material FenceMaterial => GetFenceMaterial();
 
     public void BuildShell(Vector3Int roomSizeInBlocks, IReadOnlyList<RoomDoorPlan> doorPlans)
     {
@@ -792,7 +794,7 @@ public sealed class RoomShellBuilder : MonoBehaviour
         markerInstance.transform.localScale = Vector3.one;
 
         RoomDoorMarker doorMarker = markerInstance.GetComponent<RoomDoorMarker>();
-        doorMarker.Initialize(doorPlan.Side, doorPlan.Role, doorPlan.OpeningWidthInBlocks);
+        doorMarker.Initialize(doorPlan.Side, doorPlan.Role, doorPlan.OpeningWidthInBlocks, doorPlan.OpeningHeightInBlocks);
     }
 
     private void ClearChildren(Transform rootTransform)
@@ -815,6 +817,23 @@ public sealed class RoomShellBuilder : MonoBehaviour
         }
 
         Destroy(gameObject);
+    }
+
+    private Material GetFenceMaterial()
+    {
+        if (_fenceSegmentPrefab == null)
+        {
+            return null;
+        }
+
+        Renderer fenceRenderer = _fenceSegmentPrefab.GetComponent<Renderer>();
+
+        if (fenceRenderer == null)
+        {
+            return null;
+        }
+
+        return fenceRenderer.sharedMaterial;
     }
 }
 

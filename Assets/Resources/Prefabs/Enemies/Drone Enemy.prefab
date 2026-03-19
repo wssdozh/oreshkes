@@ -105,7 +105,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TargetVision
   _origin: {fileID: 170424309483600535}
   _currentTarget: {fileID: 0}
-  _viewDistance: 10
+  _viewDistance: 7.5
   _scanInterval: 0.08
   _targetLayerMask:
     serializedVersion: 2
@@ -210,9 +210,9 @@ MonoBehaviour:
   _strafeWaitMax: 0.7
   _searchTime: 4.5
   _searchReachDistance: 0.35
-  _idleRadius: 2.8
-  _idleWaitMin: 0.35
-  _idleWaitMax: 0.8
+  _idleRadius: 4.6
+  _idleWaitMin: 0.12
+  _idleWaitMax: 0.28
   _idleReachDistance: 0.5
 --- !u!1 &923085245212562737
 GameObject:
