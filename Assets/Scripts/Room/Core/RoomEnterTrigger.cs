@@ -11,7 +11,9 @@ public sealed class RoomEnterTrigger : MonoBehaviour
     private const float MinHeightScale = 6f;
     private const string IgnoreRaycastLayer = "Ignore Raycast";
 
-    [SerializeField, Min(0f)] private float _expandInBlocks = 0.5f;
+    [SerializeField, Min(0f)] private float _expandInBlocks = 0.25f;
+    [SerializeField, Min(0.1f)] private float _depthInBlocks = 1f;
+    [SerializeField, Min(0f)] private float _insideOffsetInBlocks = 0.5f;
 
     private readonly List<Collider> _playerColliders = new List<Collider>(4);
 
@@ -20,10 +22,15 @@ public sealed class RoomEnterTrigger : MonoBehaviour
 
     public event Action Entered;
 
-    public void Setup(Bounds roomBounds, float blockSize)
+    public void Setup(RoomDoorMarker roomDoorMarker, float blockSize)
     {
+        if (roomDoorMarker == null)
+        {
+            throw new InvalidOperationException(nameof(roomDoorMarker));
+        }
+
         EnsureComponents();
-        ApplyBounds(roomBounds, blockSize);
+        ApplyDoorBounds(roomDoorMarker, blockSize);
     }
 
     private void OnDisable()
@@ -98,21 +105,58 @@ public sealed class RoomEnterTrigger : MonoBehaviour
         _rigidbody.constraints = RigidbodyConstraints.FreezeAll;
     }
 
-    private void ApplyBounds(Bounds roomBounds, float blockSize)
+    private void ApplyDoorBounds(RoomDoorMarker roomDoorMarker, float blockSize)
     {
         float safeBlockSize = Mathf.Max(blockSize, MinSize);
         float expandSize = Mathf.Max(0f, _expandInBlocks) * safeBlockSize * 2f;
-        float triggerHeight = Mathf.Max(roomBounds.size.y, safeBlockSize * MinHeightScale);
-        float triggerWidth = Mathf.Max(safeBlockSize, roomBounds.size.x + expandSize);
-        float triggerDepth = Mathf.Max(safeBlockSize, roomBounds.size.z + expandSize);
+        float inwardOffset = Mathf.Max(0f, _insideOffsetInBlocks) * safeBlockSize;
+        float triggerWidth = Mathf.Max(safeBlockSize, (roomDoorMarker.WidthInBlocks * safeBlockSize) + expandSize);
+        float triggerHeight = Mathf.Max(roomDoorMarker.HeightInBlocks * safeBlockSize, safeBlockSize * MinHeightScale);
+        float triggerDepth = Mathf.Max(safeBlockSize, _depthInBlocks * safeBlockSize);
         Vector3 triggerSize = new Vector3(triggerWidth, triggerHeight, triggerDepth);
-        Vector3 triggerCenter = roomBounds.center;
-        triggerCenter.y = roomBounds.min.y + (triggerHeight * 0.5f);
+        Vector3 inwardDirection = roomDoorMarker.transform.rotation * GetInwardDirection(roomDoorMarker.Side);
+        Vector3 triggerPosition = roomDoorMarker.transform.position + (inwardDirection * inwardOffset);
+        Quaternion triggerRotation = roomDoorMarker.transform.rotation * GetTriggerRotation(roomDoorMarker.Side);
 
-        transform.position = triggerCenter;
-        transform.rotation = Quaternion.identity;
+        transform.position = triggerPosition;
+        transform.rotation = triggerRotation;
         transform.localScale = Vector3.one;
         _boxCollider.size = triggerSize;
+    }
+
+    private Quaternion GetTriggerRotation(DoorSide side)
+    {
+        if (side == DoorSide.East)
+        {
+            return Quaternion.Euler(0f, 90f, 0f);
+        }
+
+        if (side == DoorSide.West)
+        {
+            return Quaternion.Euler(0f, 90f, 0f);
+        }
+
+        return Quaternion.identity;
+    }
+
+    private Vector3 GetInwardDirection(DoorSide side)
+    {
+        if (side == DoorSide.North)
+        {
+            return Vector3.back;
+        }
+
+        if (side == DoorSide.South)
+        {
+            return Vector3.forward;
+        }
+
+        if (side == DoorSide.East)
+        {
+            return Vector3.left;
+        }
+
+        return Vector3.right;
     }
 
     private bool IsPlayer(Collider other)

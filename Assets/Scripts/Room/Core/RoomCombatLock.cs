@@ -9,13 +9,14 @@ public sealed class RoomCombatLock : MonoBehaviour
     private const float MinBlockSize = 0.0001f;
 
     [SerializeField] private Transform _gatesRoot;
+    [SerializeField] private Transform _enterTriggersRoot;
 
     private readonly List<Enemy> _enemies = new List<Enemy>(16);
     private readonly List<Turret> _turrets = new List<Turret>(8);
     private readonly List<RoomDoorGate> _doorGates = new List<RoomDoorGate>(4);
+    private readonly List<RoomEnterTrigger> _roomEnterTriggers = new List<RoomEnterTrigger>(4);
 
     private RoomRuntimeState _roomRuntimeState;
-    private RoomEnterTrigger _roomEnterTrigger;
     private float _blockSize = 1f;
     private bool _isLocked;
     private bool _isCleared;
@@ -32,13 +33,13 @@ public sealed class RoomCombatLock : MonoBehaviour
             _roomRuntimeState = GetComponent<RoomRuntimeState>();
         }
 
-        SubscribeEnterTrigger();
+        SubscribeEnterTriggers();
         RefreshThreats();
     }
 
     private void OnDisable()
     {
-        UnsubscribeEnterTrigger();
+        UnsubscribeEnterTriggers();
         UnsubscribeThreats();
     }
 
@@ -89,8 +90,8 @@ public sealed class RoomCombatLock : MonoBehaviour
         }
 
         BuildGates();
-        EnsureEnterTrigger();
-        SubscribeEnterTrigger();
+        BuildEnterTriggers();
+        SubscribeEnterTriggers();
         RefreshThreats();
         _isLocked = false;
         _isCleared = HasAliveThreats() == false;
@@ -123,47 +124,62 @@ public sealed class RoomCombatLock : MonoBehaviour
         UnsubscribeThreats();
     }
 
-    private void EnsureEnterTrigger()
+    private void BuildEnterTriggers()
     {
-        if (_roomRuntimeState == null)
-        {
-            throw new InvalidOperationException(nameof(_roomRuntimeState));
-        }
+        Transform enterTriggersRoot = GetEnterTriggersRoot();
+        RoomDoorMarker[] roomDoorMarkers = GetComponentsInChildren<RoomDoorMarker>(true);
 
-        if (_roomEnterTrigger == null)
-        {
-            _roomEnterTrigger = GetComponentInChildren<RoomEnterTrigger>(true);
-        }
+        UnsubscribeEnterTriggers();
+        RemoveLegacyEnterTrigger();
+        ClearChildren(enterTriggersRoot);
+        _roomEnterTriggers.Clear();
 
-        if (_roomEnterTrigger == null)
+        for (int markerIndex = 0; markerIndex < roomDoorMarkers.Length; markerIndex++)
         {
+            RoomDoorMarker roomDoorMarker = roomDoorMarkers[markerIndex];
+
+            if (roomDoorMarker == null)
+            {
+                continue;
+            }
+
             GameObject triggerObject = new GameObject("Room Enter Trigger");
-            triggerObject.transform.SetParent(transform, true);
-            _roomEnterTrigger = triggerObject.AddComponent<RoomEnterTrigger>();
+            triggerObject.transform.SetParent(enterTriggersRoot, false);
+            RoomEnterTrigger roomEnterTrigger = triggerObject.AddComponent<RoomEnterTrigger>();
+            roomEnterTrigger.Setup(roomDoorMarker, _blockSize);
+            _roomEnterTriggers.Add(roomEnterTrigger);
         }
-
-        _roomEnterTrigger.Setup(_roomRuntimeState.GetRoomBounds(), _blockSize);
     }
 
-    private void SubscribeEnterTrigger()
+    private void SubscribeEnterTriggers()
     {
-        if (_roomEnterTrigger == null)
+        for (int triggerIndex = 0; triggerIndex < _roomEnterTriggers.Count; triggerIndex++)
         {
-            return;
-        }
+            RoomEnterTrigger roomEnterTrigger = _roomEnterTriggers[triggerIndex];
 
-        _roomEnterTrigger.Entered -= OnRoomEntered;
-        _roomEnterTrigger.Entered += OnRoomEntered;
+            if (roomEnterTrigger == null)
+            {
+                continue;
+            }
+
+            roomEnterTrigger.Entered -= OnRoomEntered;
+            roomEnterTrigger.Entered += OnRoomEntered;
+        }
     }
 
-    private void UnsubscribeEnterTrigger()
+    private void UnsubscribeEnterTriggers()
     {
-        if (_roomEnterTrigger == null)
+        for (int triggerIndex = 0; triggerIndex < _roomEnterTriggers.Count; triggerIndex++)
         {
-            return;
-        }
+            RoomEnterTrigger roomEnterTrigger = _roomEnterTriggers[triggerIndex];
 
-        _roomEnterTrigger.Entered -= OnRoomEntered;
+            if (roomEnterTrigger == null)
+            {
+                continue;
+            }
+
+            roomEnterTrigger.Entered -= OnRoomEntered;
+        }
     }
 
     private void BuildGates()
@@ -328,6 +344,41 @@ public sealed class RoomCombatLock : MonoBehaviour
         return _gatesRoot;
     }
 
+    private Transform GetEnterTriggersRoot()
+    {
+        if (_enterTriggersRoot != null)
+        {
+            return _enterTriggersRoot;
+        }
+
+        Transform existingRoot = transform.Find("Room Enter Triggers");
+
+        if (existingRoot != null)
+        {
+            _enterTriggersRoot = existingRoot;
+
+            return _enterTriggersRoot;
+        }
+
+        GameObject enterTriggersObject = new GameObject("Room Enter Triggers");
+        _enterTriggersRoot = enterTriggersObject.transform;
+        _enterTriggersRoot.SetParent(transform, false);
+
+        return _enterTriggersRoot;
+    }
+
+    private void RemoveLegacyEnterTrigger()
+    {
+        Transform legacyTrigger = transform.Find("Room Enter Trigger");
+
+        if (legacyTrigger == null)
+        {
+            return;
+        }
+
+        DestroyGameObject(legacyTrigger.gameObject);
+    }
+
     private void ClearChildren(Transform rootTransform)
     {
         int childCount = rootTransform.childCount;
@@ -335,16 +386,20 @@ public sealed class RoomCombatLock : MonoBehaviour
         for (int childIndex = childCount - 1; childIndex >= 0; childIndex--)
         {
             Transform childTransform = rootTransform.GetChild(childIndex);
-
-            if (Application.isPlaying == false)
-            {
-                DestroyImmediate(childTransform.gameObject);
-            }
-            else
-            {
-                Destroy(childTransform.gameObject);
-            }
+            DestroyGameObject(childTransform.gameObject);
         }
+    }
+
+    private void DestroyGameObject(GameObject gameObject)
+    {
+        if (Application.isPlaying == false)
+        {
+            DestroyImmediate(gameObject);
+
+            return;
+        }
+
+        Destroy(gameObject);
     }
 
     private void OnRoomEntered()
