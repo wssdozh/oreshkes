@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 public class IdleRotator : MonoBehaviour
@@ -10,12 +11,25 @@ public class IdleRotator : MonoBehaviour
     [SerializeField] private float _idleMaxAngle = 45f;
 
     private Quaternion _baseLocalRotation;
+    private Quaternion _startLocalRotation;
     private float _currentAngle;
     private int _direction = 1;
 
+    private void Awake()
+    {
+        if (_rotationPivot == null)
+        {
+            throw new InvalidOperationException(nameof(_rotationPivot));
+        }
+
+        _startLocalRotation = _rotationPivot.localRotation;
+        _baseLocalRotation = _startLocalRotation;
+    }
+
     public void ResetBaseRotation()
     {
-        _baseLocalRotation = _rotationPivot.localRotation;
+        _baseLocalRotation = _startLocalRotation;
+        _rotationPivot.localRotation = _startLocalRotation;
         _currentAngle = 0f;
         _direction = 1;
     }
