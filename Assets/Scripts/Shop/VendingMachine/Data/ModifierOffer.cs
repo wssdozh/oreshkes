@@ -9,14 +9,14 @@ public sealed class ModifierOffer : ScriptableObject
     private const int LegendaryPrice = 95;
     private const int ExtraModifierPrice = 12;
 
-    private const int RarePercent = 18;
-    private const int LegendaryPercent = 35;
+    private const int RarePercent = 25;
+    private const int LegendaryPercent = 40;
 
-    private const int RarePelletBonus = 2;
-    private const int LegendaryPelletBonus = 3;
+    private const int RarePelletBonus = 3;
+    private const int LegendaryPelletBonus = 4;
 
-    private const int RareCritScore = 28;
-    private const int LegendaryCritScore = 48;
+    private const int RareCritScore = 35;
+    private const int LegendaryCritScore = 55;
 
     [SerializeField] private string _title;
     [SerializeField] private Sprite _icon;

@@ -223,6 +223,9 @@ MonoBehaviour:
   _fireExecutor: {fileID: 3601055731436968810}
   _headCrash: {fileID: 1704243094836005359}
   _fireDelaySeconds: 0.85
+  _sinkDelay: 1
+  _sinkDuration: 7
+  _sinkDistance: 2.2
 --- !u!114 &6483522750506240681
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -19,8 +19,8 @@ public class Turret : MonoBehaviour, IEnemyAlert
     [SerializeField] private float _fireDelaySeconds = 0.25f;
 
     [Header("Death")]
-    [SerializeField, Min(0f)] private float _sinkDelay = 5.2f;
-    [SerializeField, Min(0.01f)] private float _sinkDuration = 6.5f;
+    [SerializeField, Min(0f)] private float _sinkDelay = 1f;
+    [SerializeField, Min(0.01f)] private float _sinkDuration = 7f;
     [SerializeField, Min(0f)] private float _sinkDistance = 2.2f;
 
     private Vector3 _alertPoint;

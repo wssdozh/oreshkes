@@ -11,9 +11,9 @@ public sealed class ModifierVendingMachine : Interactable
     [SerializeField] private int _cardCount = 3;
 
     [Header("Редкость")]
-    [SerializeField] private int _commonWeight = 5;
+    [SerializeField] private int _commonWeight = 10;
     [SerializeField] private int _rareWeight = 3;
-    [SerializeField] private int _legendaryWeight = 2;
+    [SerializeField] private int _legendaryWeight = 1;
 
     [Header("Одноразовый")]
     [SerializeField] private bool _disableColliderOnPurchase = true;
