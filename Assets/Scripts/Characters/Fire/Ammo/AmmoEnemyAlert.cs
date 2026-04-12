@@ -137,13 +137,6 @@ public sealed class AmmoEnemyAlert : AmmoLifeListener
             return enemyDroneBrain;
         }
 
-        EnemyBomberBrain enemyBomberBrain = hitCollider.GetComponentInParent<EnemyBomberBrain>();
-
-        if (enemyBomberBrain != null)
-        {
-            return enemyBomberBrain;
-        }
-
         return null;
     }
 

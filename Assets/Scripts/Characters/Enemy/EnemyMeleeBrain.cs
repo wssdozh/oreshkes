@@ -42,6 +42,7 @@ public sealed class EnemyMeleeBrain : MonoBehaviour, IEnemyBrain, IEnemyAlert
     [SerializeField] private EnemyAnimation _animation;
     [SerializeField] private PlayerAnimationEvents _animationEvents;
     [SerializeField] private WeaponHolder _weaponHolder;
+    [SerializeField] private EnemySuicideAttack _suicideAttack;
 
     [Header("Combat")]
     [SerializeField] private float _runStartDistance = 4.4f;
@@ -127,6 +128,11 @@ public sealed class EnemyMeleeBrain : MonoBehaviour, IEnemyBrain, IEnemyAlert
         }
 
         if (_targetVision.IsTargetVisible)
+        {
+            return false;
+        }
+
+        if (IsSuicideActive())
         {
             return false;
         }
@@ -404,6 +410,11 @@ public sealed class EnemyMeleeBrain : MonoBehaviour, IEnemyBrain, IEnemyAlert
         _enemyMove.SetRun(false);
         _enemySteering.Stop();
         ResetAttackState();
+
+        if (_suicideAttack != null)
+        {
+            _suicideAttack.ResetState();
+        }
     }
 
     private void FixedUpdate()
@@ -443,10 +454,13 @@ public sealed class EnemyMeleeBrain : MonoBehaviour, IEnemyBrain, IEnemyAlert
         float maxHealth = _baseHealthMax;
         float speedScale = 1f;
 
-        if (GetFireExecutor() == null)
+        if (_suicideAttack == null)
         {
-            maxHealth += _meleeHealthBonus;
-            speedScale = _meleeSpeedScale;
+            if (GetFireExecutor() == null)
+            {
+                maxHealth += _meleeHealthBonus;
+                speedScale = _meleeSpeedScale;
+            }
         }
 
         health.SetMaxValue(maxHealth);
@@ -567,6 +581,13 @@ public sealed class EnemyMeleeBrain : MonoBehaviour, IEnemyBrain, IEnemyAlert
             return;
         }
 
+        if (_suicideAttack != null)
+        {
+            ProcessSuicideTarget(currentPoint, targetPoint, distance);
+
+            return;
+        }
+
         if (fireExecutor != null)
         {
             ProcessRangeTarget(currentPoint, targetPoint, distance, fireExecutor);
@@ -593,6 +614,13 @@ public sealed class EnemyMeleeBrain : MonoBehaviour, IEnemyBrain, IEnemyAlert
         {
             _state = EnemyState.Fight;
             StopAttackMove();
+
+            return;
+        }
+
+        if (IsSuicideActive())
+        {
+            ProcessSuicideFuse(GetFlatPoint(transform.position));
 
             return;
         }
@@ -628,6 +656,75 @@ public sealed class EnemyMeleeBrain : MonoBehaviour, IEnemyBrain, IEnemyAlert
         _state = EnemyState.Search;
         _enemyMove.SetRun(false);
         ProcessSearch(currentPoint);
+    }
+
+    private void ProcessSuicideTarget(Vector3 currentPoint, Vector3 targetPoint, float distance)
+    {
+        if (_suicideAttack.IsStartNeeded(distance))
+        {
+            _suicideAttack.StartFuse();
+        }
+
+        if (_suicideAttack.IsActive)
+        {
+            _state = EnemyState.Fight;
+        }
+
+        else
+        {
+            _state = EnemyState.Chase;
+        }
+
+        _enemyMove.SetRun(true);
+
+        if (TrySuicideMove(currentPoint, targetPoint))
+        {
+            _suicideAttack.Tick();
+
+            return;
+        }
+
+        _enemySteering.LookToPoint(targetPoint);
+        _suicideAttack.Tick();
+    }
+
+    private void ProcessSuicideFuse(Vector3 currentPoint)
+    {
+        _state = EnemyState.Fight;
+        _enemyMove.SetRun(true);
+
+        if (_hasLastSeenPoint)
+        {
+            TrySuicideMove(currentPoint, _lastSeenPoint);
+        }
+
+        else
+        {
+            _enemySteering.ForceStop();
+        }
+
+        _suicideAttack.Tick();
+    }
+
+    private bool TrySuicideMove(Vector3 currentPoint, Vector3 targetPoint)
+    {
+        bool isMoving = _enemySteering.MoveToPoint(GetMovePoint(targetPoint), GetCombatStopDistance(), targetPoint);
+
+        if (isMoving == false)
+        {
+            _enemySteering.ForceStop();
+
+            return false;
+        }
+
+        if (CanKeepMove(currentPoint))
+        {
+            return true;
+        }
+
+        _enemySteering.ForceStop();
+
+        return false;
     }
 
     private void ProcessHiddenRange(Vector3 currentPoint)
@@ -1314,6 +1411,12 @@ public sealed class EnemyMeleeBrain : MonoBehaviour, IEnemyBrain, IEnemyAlert
         _enemyMove.SetRun(false);
         _enemyRotator.SnapToDirection(_idleDirection);
         _enemySteering.Stop();
+
+        if (_suicideAttack != null)
+        {
+            _suicideAttack.ResetState();
+        }
+
         StartIdleWalk();
 
         if (_isIdleWalking)
@@ -1334,6 +1437,12 @@ public sealed class EnemyMeleeBrain : MonoBehaviour, IEnemyBrain, IEnemyAlert
         ResetMoveStuck();
         ResetAttackState();
         _enemySteering.Stop();
+
+        if (_suicideAttack != null)
+        {
+            _suicideAttack.ResetState();
+        }
+
         enabled = false;
     }
 
@@ -1712,6 +1821,16 @@ public sealed class EnemyMeleeBrain : MonoBehaviour, IEnemyBrain, IEnemyAlert
 
         fireExecutor.StopFiring();
         fireExecutor.ClearAimPoint();
+    }
+
+    private bool IsSuicideActive()
+    {
+        if (_suicideAttack == null)
+        {
+            return false;
+        }
+
+        return _suicideAttack.IsActive;
     }
 
     private bool IsRunNeeded(float distance)

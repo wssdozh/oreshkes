@@ -36,12 +36,11 @@ PrefabInstance:
       propertyPath: _viewDistance
       value: 6
       objectReference: {fileID: 0}
-    - target: {fileID: 5741961401539005627, guid: 8e6817801d5b035419c449515b41f3c1, type: 3}
-      propertyPath: _enemyBrain
+    - target: {fileID: 3911330252427202063, guid: 8e6817801d5b035419c449515b41f3c1, type: 3}
+      propertyPath: _suicideAttack
       value: 
       objectReference: {fileID: 5771000000000000008}
-    m_RemovedComponents:
-    - {fileID: 3911330252427202063, guid: 8e6817801d5b035419c449515b41f3c1, type: 3}
+    m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents:
@@ -88,19 +87,13 @@ MonoBehaviour:
   m_GameObject: {fileID: 5771000000000000002}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3a8d9317c9a7464d90346bc4db2748f2, type: 3}
+  m_Script: {fileID: 11500000, guid: 8453d86a3fde4f26b127099a5e2c984e, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::EnemyBomberBrain
-  _enemy: {fileID: 5771000000000000003}
+  m_EditorClassIdentifier: Assembly-CSharp::EnemySuicideAttack
   _health: {fileID: 5771000000000000004}
-  _targetVision: {fileID: 5771000000000000005}
-  _enemyMove: {fileID: 5771000000000000006}
-  _enemyRotator: {fileID: 5771000000000000007}
-  _explosionPrefab: {fileID: 2433282508537954060, guid: a2ddbd7a826943842a7d547df0c372bc, type: 3}
-  _searchTime: 1.2
-  _explodeDistance: 1.25
-  _explodeDelay: 1
-  _stopDistance: 0.2
+  _fxPrefab: {fileID: 2433282508537954060, guid: a2ddbd7a826943842a7d547df0c372bc, type: 3}
+  _startDistance: 1.25
+  _delay: 1
   _damageMask:
     serializedVersion: 2
     m_Bits: 64
@@ -108,4 +101,4 @@ MonoBehaviour:
   _radius: 2.2
   _impulse: 3.5
   _up: 0.35
-  _effectLife: 5
+  _fxLife: 5
