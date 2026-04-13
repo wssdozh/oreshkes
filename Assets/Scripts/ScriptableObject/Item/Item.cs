@@ -10,6 +10,7 @@ public class Item : ScriptableObject
     [SerializeField] private bool _isStackable;
     [SerializeField] private int _maxStack = 1;
     [SerializeField] private WeaponType _weaponType = WeaponType.None;
+    [SerializeField] private bool _isMultiHit;
     [SerializeField] private List<ItemEffect> _effects;
     [SerializeField] private List<WeaponModifier> _weaponModifiers = new List<WeaponModifier>();
     [SerializeField] private ItemAudioProfile _audioProfile;
@@ -21,6 +22,7 @@ public class Item : ScriptableObject
     public bool IsStackable => _isStackable;
     public int MaxStack => _maxStack;
     public WeaponType WeaponType => _weaponType;
+    public bool IsMultiHit => _isMultiHit;
     public IReadOnlyList<ItemEffect> Effects => _effects;
     public IReadOnlyList<WeaponModifier> WeaponModifiers => GetWeaponModifiers();
     public ItemAudioProfile AudioProfile => _audioProfile;

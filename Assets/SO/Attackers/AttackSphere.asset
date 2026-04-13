@@ -16,7 +16,7 @@ MonoBehaviour:
   _minDamage: 6
   _maxDamage: 10
   _attackCooldown: 0
-  _isMultiHit: 1
+  _isMultiHit: 0
   _hitLayers:
     serializedVersion: 2
     m_Bits: 897

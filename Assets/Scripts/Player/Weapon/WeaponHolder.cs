@@ -19,6 +19,7 @@ public class WeaponHolder : MonoBehaviour
     public FireExecutor FireExecutor { get; private set; }
     public bool IsHoldAllowed { get; private set; }
     public bool IsSwitchLocked { get; private set; }
+    public Item CurrentItem => GetCurrentItem();
 
     public event Action Changed;
 
@@ -280,5 +281,15 @@ public class WeaponHolder : MonoBehaviour
         }
 
         enabled = _pickup == null;
+    }
+
+    private Item GetCurrentItem()
+    {
+        if (_pickup == null)
+        {
+            return null;
+        }
+
+        return _pickup.Item;
     }
 }

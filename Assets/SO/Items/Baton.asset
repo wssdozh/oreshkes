@@ -18,6 +18,7 @@ MonoBehaviour:
   _isStackable: 0
   _maxStack: 1
   _weaponType: 3
+  _isMultiHit: 1
   _effects: []
   _weaponModifiers:
   - {fileID: 11400000, guid: 9cbce3e217f54e3cb9d8d0ca10a58412, type: 2}
