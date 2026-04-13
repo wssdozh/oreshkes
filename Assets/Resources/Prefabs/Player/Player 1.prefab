@@ -401,6 +401,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Attacker
   _attackData: {fileID: 11400000, guid: fe96e0b1cedb527488b817f3e111a4cc, type: 2}
+  _weaponHolder: {fileID: 100807586414554310}
   _hitForce: 6
   _hitForceMode: 1
 --- !u!1 &1590545038120048867

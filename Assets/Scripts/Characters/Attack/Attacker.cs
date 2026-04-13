@@ -7,6 +7,7 @@ public class Attacker : MonoBehaviour
     private const float DirectionThreshold = 0.0001f;
 
     [SerializeField] private AttackData _attackData;
+    [SerializeField] private WeaponHolder _weaponHolder;
     [SerializeField] private float _hitForce = 6f;
     [SerializeField] private ForceMode _hitForceMode = ForceMode.Impulse;
     [SerializeField] private bool _isGizmoVisible = true;
@@ -61,7 +62,7 @@ public class Attacker : MonoBehaviour
             return true;
         }
 
-        if (_attackData.IsMultiHit)
+        if (IsMultiHit())
         {
             PerformMultiAttack(hitCount, damage);
         }
@@ -309,6 +310,21 @@ public class Attacker : MonoBehaviour
         {
             targetHealth.Decrease(damage);
         }
+    }
+
+    private bool IsMultiHit()
+    {
+        if (_weaponHolder != null)
+        {
+            Item currentItem = _weaponHolder.CurrentItem;
+
+            if (currentItem != null)
+            {
+                return currentItem.IsMultiHit;
+            }
+        }
+
+        return _attackData.IsMultiHit;
     }
 
     private int GetTargetId(Health targetHealth, Rigidbody targetRigidbody)
