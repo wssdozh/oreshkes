@@ -9,6 +9,7 @@ public sealed class SettingsPanelView : MonoBehaviour
     private const int LowQualityIndex = 0;
     private const int MediumQualityIndex = 1;
     private const int HighQualityIndex = 2;
+    private const float TeleportHeightOffset = 0.35f;
 
     [SerializeField] private AudioMixer _audioMixer;
 
@@ -28,7 +29,12 @@ public sealed class SettingsPanelView : MonoBehaviour
     [SerializeField] private Button _healthOnButton;
     [SerializeField] private Button _damageOffButton;
     [SerializeField] private Button _damageOnButton;
+    [SerializeField] private Button _teleportBossButton;
     [SerializeField] private Button _resetButton;
+
+    [SerializeField] private Transform _playerRoot;
+    [SerializeField] private Transform _playerBody;
+    [SerializeField] private GameObject _levelRoot;
 
     private readonly int[] _qualityLevels = new int[3];
 
@@ -43,6 +49,7 @@ public sealed class SettingsPanelView : MonoBehaviour
     private Image _healthOnImage;
     private Image _damageOffImage;
     private Image _damageOnImage;
+    private Image _teleportBossImage;
     private Image _resetImage;
 
     private TMP_Text _windowText;
@@ -54,14 +61,18 @@ public sealed class SettingsPanelView : MonoBehaviour
     private TMP_Text _healthOnText;
     private TMP_Text _damageOffText;
     private TMP_Text _damageOnText;
+    private TMP_Text _teleportBossText;
     private TMP_Text _resetText;
 
     private Color _buttonTextColor;
     private Color _inactiveColor;
 
     private bool _isSyncing;
+    private bool _isBound;
 
     private SettingsPresenter _settingsPresenter;
+    private LevelGenerator _levelGenerator;
+    private Rigidbody _playerBodyRigidbody;
 
     public event Action<float> MasterChanged;
     public event Action<float> MusicChanged;
@@ -77,6 +88,7 @@ public sealed class SettingsPanelView : MonoBehaviour
         ValidateReferences();
         CacheButtons();
         Bind();
+        _isBound = true;
 
         _settingsPresenter = new SettingsPresenter(this, _audioMixer, new SettingsSave());
         _settingsPresenter.Initialize();
@@ -84,10 +96,16 @@ public sealed class SettingsPanelView : MonoBehaviour
 
     private void OnDestroy()
     {
-        Unbind();
+        if (_isBound)
+        {
+            Unbind();
+            _isBound = false;
+        }
 
         if (_settingsPresenter != null)
+        {
             _settingsPresenter.Dispose();
+        }
     }
 
     internal void SetQualityLevels(int lowQualityLevel, int mediumQualityLevel, int highQualityLevel)
@@ -113,6 +131,7 @@ public sealed class SettingsPanelView : MonoBehaviour
         UpdateQualityState(settingsData.QualityLevel);
         UpdateHealthState(settingsData.IsInfiniteHealth);
         UpdateDamageState(settingsData.IsInfiniteDamage);
+        UpdateButtonState(_teleportBossImage, _teleportBossText, false);
 
         _isSyncing = false;
     }
@@ -135,7 +154,11 @@ public sealed class SettingsPanelView : MonoBehaviour
         ValidateReference(_healthOnButton, nameof(_healthOnButton));
         ValidateReference(_damageOffButton, nameof(_damageOffButton));
         ValidateReference(_damageOnButton, nameof(_damageOnButton));
+        ValidateReference(_teleportBossButton, nameof(_teleportBossButton));
         ValidateReference(_resetButton, nameof(_resetButton));
+        ValidateReference(_playerRoot, nameof(_playerRoot));
+        ValidateReference(_playerBody, nameof(_playerBody));
+        ValidateReference(_levelRoot, nameof(_levelRoot));
     }
 
     private void ValidateReference(UnityEngine.Object target, string fieldName)
@@ -155,6 +178,7 @@ public sealed class SettingsPanelView : MonoBehaviour
         _healthOnImage = GetButtonImage(_healthOnButton);
         _damageOffImage = GetButtonImage(_damageOffButton);
         _damageOnImage = GetButtonImage(_damageOnButton);
+        _teleportBossImage = GetButtonImage(_teleportBossButton);
         _resetImage = GetButtonImage(_resetButton);
 
         _windowText = GetButtonText(_windowButton);
@@ -166,10 +190,21 @@ public sealed class SettingsPanelView : MonoBehaviour
         _healthOnText = GetButtonText(_healthOnButton);
         _damageOffText = GetButtonText(_damageOffButton);
         _damageOnText = GetButtonText(_damageOnButton);
+        _teleportBossText = GetButtonText(_teleportBossButton);
         _resetText = GetButtonText(_resetButton);
 
         _buttonTextColor = _windowText.color;
         _inactiveColor = _windowImage.color;
+
+        _levelGenerator = _levelRoot.GetComponent<LevelGenerator>();
+
+        if (_levelGenerator == null)
+            throw new MissingComponentException(nameof(LevelGenerator));
+
+        _playerBodyRigidbody = _playerBody.GetComponent<Rigidbody>();
+
+        if (_playerBodyRigidbody == null)
+            throw new MissingComponentException(nameof(Rigidbody));
     }
 
     private Image GetButtonImage(Button button)
@@ -207,25 +242,47 @@ public sealed class SettingsPanelView : MonoBehaviour
         _healthOnButton.onClick.AddListener(OnHealthOnClicked);
         _damageOffButton.onClick.AddListener(OnDamageOffClicked);
         _damageOnButton.onClick.AddListener(OnDamageOnClicked);
+        _teleportBossButton.onClick.AddListener(OnTeleportBossClicked);
         _resetButton.onClick.AddListener(OnResetClicked);
     }
 
     private void Unbind()
     {
-        _masterSlider.onValueChanged.RemoveListener(OnMasterChanged);
-        _musicSlider.onValueChanged.RemoveListener(OnMusicChanged);
-        _effectsSlider.onValueChanged.RemoveListener(OnEffectsChanged);
+        RemoveSliderListener(_masterSlider, OnMasterChanged);
+        RemoveSliderListener(_musicSlider, OnMusicChanged);
+        RemoveSliderListener(_effectsSlider, OnEffectsChanged);
 
-        _windowButton.onClick.RemoveListener(OnWindowClicked);
-        _screenButton.onClick.RemoveListener(OnScreenClicked);
-        _lowQualityButton.onClick.RemoveListener(OnLowQualityClicked);
-        _mediumQualityButton.onClick.RemoveListener(OnMediumQualityClicked);
-        _highQualityButton.onClick.RemoveListener(OnHighQualityClicked);
-        _healthOffButton.onClick.RemoveListener(OnHealthOffClicked);
-        _healthOnButton.onClick.RemoveListener(OnHealthOnClicked);
-        _damageOffButton.onClick.RemoveListener(OnDamageOffClicked);
-        _damageOnButton.onClick.RemoveListener(OnDamageOnClicked);
-        _resetButton.onClick.RemoveListener(OnResetClicked);
+        RemoveButtonListener(_windowButton, OnWindowClicked);
+        RemoveButtonListener(_screenButton, OnScreenClicked);
+        RemoveButtonListener(_lowQualityButton, OnLowQualityClicked);
+        RemoveButtonListener(_mediumQualityButton, OnMediumQualityClicked);
+        RemoveButtonListener(_highQualityButton, OnHighQualityClicked);
+        RemoveButtonListener(_healthOffButton, OnHealthOffClicked);
+        RemoveButtonListener(_healthOnButton, OnHealthOnClicked);
+        RemoveButtonListener(_damageOffButton, OnDamageOffClicked);
+        RemoveButtonListener(_damageOnButton, OnDamageOnClicked);
+        RemoveButtonListener(_teleportBossButton, OnTeleportBossClicked);
+        RemoveButtonListener(_resetButton, OnResetClicked);
+    }
+
+    private void RemoveSliderListener(Slider slider, UnityEngine.Events.UnityAction<float> listener)
+    {
+        if (slider == null)
+        {
+            return;
+        }
+
+        slider.onValueChanged.RemoveListener(listener);
+    }
+
+    private void RemoveButtonListener(Button button, UnityEngine.Events.UnityAction listener)
+    {
+        if (button == null)
+        {
+            return;
+        }
+
+        button.onClick.RemoveListener(listener);
     }
 
     private void UpdateSliderValue(TMP_Text valueText, float value)
@@ -345,9 +402,29 @@ public sealed class SettingsPanelView : MonoBehaviour
             InfiniteDamageChanged?.Invoke(true);
     }
 
+    private void OnTeleportBossClicked()
+    {
+        if (_isSyncing == false)
+            TeleportPlayerToBossRoom();
+    }
+
     private void OnResetClicked()
     {
         if (_isSyncing == false)
             ResetClicked?.Invoke();
+    }
+
+    private void TeleportPlayerToBossRoom()
+    {
+        Vector3 bossRoomEntryPosition = _levelGenerator.GetBossRoomEntry();
+        bossRoomEntryPosition.y += TeleportHeightOffset;
+
+        Vector3 rootToBodyOffset = _playerRoot.position - _playerBody.position;
+        Vector3 targetRootPosition = bossRoomEntryPosition + rootToBodyOffset;
+
+        _playerRoot.position = targetRootPosition;
+        _playerBodyRigidbody.linearVelocity = Vector3.zero;
+        _playerBodyRigidbody.angularVelocity = Vector3.zero;
+        _playerBodyRigidbody.position = bossRoomEntryPosition;
     }
 }
