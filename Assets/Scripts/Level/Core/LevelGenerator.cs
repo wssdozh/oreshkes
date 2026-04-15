@@ -5,6 +5,9 @@ using UnityEngine.SceneManagement;
 
 public sealed class LevelGenerator : MonoBehaviour
 {
+    private const string FloorRootName = "FloorBlockRoot";
+    private const float BossRoomEntryOffset = 2f;
+
     [Header("Roots")]
     [SerializeField] private Transform _roomsRoot;
     [SerializeField] private Transform _corridorsRoot;
@@ -507,7 +510,7 @@ public sealed class LevelGenerator : MonoBehaviour
 
     public Vector3 GetStartRoomCenter()
     {
-        PlacedRoomInfo startRoomInfo = FindStartRoomInfo();
+        PlacedRoomInfo startRoomInfo = FindRoomInfo(RoomType.Start);
 
         if (startRoomInfo == null)
         {
@@ -524,14 +527,72 @@ public sealed class LevelGenerator : MonoBehaviour
             throw new InvalidOperationException(nameof(startRoomInfo.Node.RoomInstance));
         }
 
-        return ResolveStartRoomCenter(startRoomInfo);
+        return ResolveRoomCenter(startRoomInfo);
     }
 
-    private PlacedRoomInfo FindStartRoomInfo()
+    public Vector3 GetBossRoomCenter()
+    {
+        PlacedRoomInfo bossRoomInfo = FindRoomInfo(RoomType.Boss);
+
+        if (bossRoomInfo == null)
+        {
+            throw new InvalidOperationException(nameof(bossRoomInfo));
+        }
+
+        if (bossRoomInfo.Node == null)
+        {
+            throw new InvalidOperationException(nameof(bossRoomInfo.Node));
+        }
+
+        if (bossRoomInfo.Node.RoomInstance == null)
+        {
+            throw new InvalidOperationException(nameof(bossRoomInfo.Node.RoomInstance));
+        }
+
+        return ResolveRoomCenter(bossRoomInfo);
+    }
+
+    public Vector3 GetBossRoomEntry()
+    {
+        PlacedRoomInfo bossRoomInfo = FindRoomInfo(RoomType.Boss);
+
+        if (bossRoomInfo == null)
+        {
+            throw new InvalidOperationException(nameof(bossRoomInfo));
+        }
+
+        if (bossRoomInfo.Node == null)
+        {
+            throw new InvalidOperationException(nameof(bossRoomInfo.Node));
+        }
+
+        if (bossRoomInfo.Node.RoomInstance == null)
+        {
+            throw new InvalidOperationException(nameof(bossRoomInfo.Node.RoomInstance));
+        }
+
+        RoomDoorMarker entranceMarker = bossRoomInfo.Node.EntranceMarker;
+
+        if (entranceMarker == null)
+        {
+            throw new InvalidOperationException(nameof(entranceMarker));
+        }
+
+        Vector3 entryDirection = LevelDoorAlignmentUtility.GetWorldSideDirection(
+            bossRoomInfo.Node.RoomInstance.transform,
+            entranceMarker.Side
+        );
+        float entryOffset = _corridorBuilder.BlockSize * BossRoomEntryOffset;
+        Vector3 entryPosition = entranceMarker.transform.position + (entryDirection * entryOffset);
+        entryPosition.y = entranceMarker.transform.position.y;
+
+        return entryPosition;
+    }
+
+    private PlacedRoomInfo FindRoomInfo(RoomType roomType)
     {
         for (int roomIndex = 0; roomIndex < _generationContext.PlacedRooms.Count; roomIndex++)
         {
-
             PlacedRoomInfo placedRoomInfo = _generationContext.PlacedRooms[roomIndex];
 
             if (placedRoomInfo == null)
@@ -546,25 +607,24 @@ public sealed class LevelGenerator : MonoBehaviour
                 continue;
             }
 
-            if (levelNode.RoomType == RoomType.Start)
+            if (levelNode.RoomType == roomType)
             {
                 return placedRoomInfo;
             }
-
         }
 
         return null;
     }
 
-    private Vector3 ResolveStartRoomCenter(PlacedRoomInfo startRoomInfo)
+    private Vector3 ResolveRoomCenter(PlacedRoomInfo roomInfo)
     {
-        Vector3 roomCenterPosition = startRoomInfo.SolidBounds.center;
-        Transform roomTransform = startRoomInfo.Node.RoomInstance.transform;
-        Transform floorRoot = roomTransform.Find("FloorBlockRoot");
+        Vector3 roomCenterPosition = roomInfo.SolidBounds.center;
+        Transform roomTransform = roomInfo.Node.RoomInstance.transform;
+        Transform floorRoot = roomTransform.Find(FloorRootName);
 
         if (floorRoot == null)
         {
-            roomCenterPosition.y = startRoomInfo.SolidBounds.min.y;
+            roomCenterPosition.y = roomInfo.SolidBounds.min.y;
 
             return roomCenterPosition;
         }
