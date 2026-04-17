@@ -1,36 +1,26 @@
 using System;
-using System.Text;
 using DG.Tweening;
 using JunkyardBoss;
-using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 public sealed class BossHealthOverlay : MonoBehaviour
 {
     private const float SearchInterval = 0.35f;
-    private const float SliderDuration = 0.2f;
     private const float ShowDuration = 0.32f;
     private const float HideDuration = 0.24f;
-    private const float HiddenScale = 0.94f;
+    private const float HiddenScaleMultiplier = 0.94f;
+    private const float VisibleScale = 1.85f;
     private const float EnterOffsetY = 88f;
     private const float HideOffsetY = 30f;
-    private const float PanelWidth = 760f;
-    private const float PanelHeight = 92f;
-    private const float BarHeight = 18f;
-
-    private static Sprite s_uiSprite;
-    private static bool s_uiSpriteResolved;
 
     private RectTransform _uiRoot;
-    private TMP_FontAsset _fontAsset;
+    private RectTransform _indicatorTemplate;
     private RectTransform _panelTransform;
     private CanvasGroup _canvasGroup;
-    private Slider _slider;
-    private TextMeshProUGUI _titleText;
-    private TextMeshProUGUI _valueText;
+    private HealthSmoothSliderIndicator[] _sliderIndicators;
+    private HealthTextIndicator[] _textIndicators;
     private Sequence _visibilitySequence;
-    private Tween _sliderTween;
     private BossExcavator _boss;
     private Health _bossHealth;
     private RoomCombatLock _roomCombatLock;
@@ -38,20 +28,20 @@ public sealed class BossHealthOverlay : MonoBehaviour
     private float _searchTimer;
     private bool _isShown;
 
-    public void Initialize(RectTransform uiRoot, TMP_FontAsset fontAsset)
+    public void Initialize(RectTransform uiRoot, RectTransform indicatorTemplate)
     {
         if (uiRoot == null)
         {
             throw new InvalidOperationException(nameof(uiRoot));
         }
 
-        if (fontAsset == null)
+        if (indicatorTemplate == null)
         {
-            throw new InvalidOperationException(nameof(fontAsset));
+            throw new InvalidOperationException(nameof(indicatorTemplate));
         }
 
         _uiRoot = uiRoot;
-        _fontAsset = fontAsset;
+        _indicatorTemplate = indicatorTemplate;
         BuildView();
         ApplyHiddenState();
     }
@@ -65,7 +55,6 @@ public sealed class BossHealthOverlay : MonoBehaviour
     {
         UnbindBoss();
         KillVisibilitySequence();
-        KillSliderTween();
 
         if (_panelTransform != null)
         {
@@ -99,145 +88,134 @@ public sealed class BossHealthOverlay : MonoBehaviour
             return;
         }
 
-        Sprite uiSprite = ResolveUiSprite();
+        _panelTransform = Instantiate(_indicatorTemplate, _uiRoot);
+        _panelTransform.name = "Boss Health";
+        _panelTransform.SetAsLastSibling();
+        _canvasGroup = _panelTransform.gameObject.AddComponent<CanvasGroup>();
+        _shownAnchoredPosition = new Vector2(0f, -18f);
 
-        int uiLayer = _uiRoot.gameObject.layer;
-        GameObject panelObject = CreateUiObject("Boss Health", _uiRoot, uiLayer);
-        _panelTransform = panelObject.GetComponent<RectTransform>();
-        _canvasGroup = panelObject.AddComponent<CanvasGroup>();
-        _shownAnchoredPosition = new Vector2(0f, -16f);
-
-        ConfigureRect(
-            _panelTransform,
-            new Vector2(0.5f, 1f),
-            new Vector2(0.5f, 1f),
-            new Vector2(0.5f, 1f),
-            _shownAnchoredPosition,
-            new Vector2(PanelWidth, PanelHeight));
-
-        Image panelImage = panelObject.AddComponent<Image>();
-        panelImage.sprite = uiSprite;
-        panelImage.type = Image.Type.Simple;
-        panelImage.color = new Color(0.03f, 0.04f, 0.05f, 0.94f);
-        panelImage.raycastTarget = false;
-
-        RectTransform accentTransform = CreateImageRect(
-            "Accent",
-            _panelTransform,
-            uiLayer,
-            uiSprite,
-            new Color(0.82f, 0.33f, 0.18f, 1f));
-        ConfigureRect(
-            accentTransform,
-            new Vector2(0f, 1f),
-            new Vector2(1f, 1f),
-            new Vector2(0.5f, 1f),
-            new Vector2(0f, 0f),
-            new Vector2(0f, 4f));
-
-        _titleText = CreateText("Title", _panelTransform, uiLayer, 30f, FontStyles.Bold);
-        _titleText.alignment = TextAlignmentOptions.Left;
-        _titleText.textWrappingMode = TextWrappingModes.NoWrap;
-        _titleText.overflowMode = TextOverflowModes.Ellipsis;
-        _titleText.text = "BOSS";
-        ConfigureRect(
-            _titleText.rectTransform,
-            new Vector2(0f, 1f),
-            new Vector2(0.7f, 1f),
-            new Vector2(0f, 1f),
-            new Vector2(22f, -14f),
-            new Vector2(-150f, 30f));
-
-        _valueText = CreateText("Value", _panelTransform, uiLayer, 22f, FontStyles.Bold);
-        _valueText.alignment = TextAlignmentOptions.Right;
-        _valueText.textWrappingMode = TextWrappingModes.NoWrap;
-        _valueText.text = "0 / 0";
-        ConfigureRect(
-            _valueText.rectTransform,
-            new Vector2(0.7f, 1f),
-            new Vector2(1f, 1f),
-            new Vector2(1f, 1f),
-            new Vector2(-22f, -16f),
-            new Vector2(-22f, 28f));
-
-        GameObject barObject = CreateUiObject("Bar", _panelTransform, uiLayer);
-        RectTransform barTransform = barObject.GetComponent<RectTransform>();
-        ConfigureRect(
-            barTransform,
-            new Vector2(0f, 0f),
-            new Vector2(1f, 0f),
-            new Vector2(0.5f, 0f),
-            new Vector2(0f, 16f),
-            new Vector2(-32f, BarHeight));
-
-        Image barBackground = barObject.AddComponent<Image>();
-        barBackground.sprite = uiSprite;
-        barBackground.type = Image.Type.Simple;
-        barBackground.color = new Color(0.12f, 0.14f, 0.18f, 1f);
-        barBackground.raycastTarget = false;
-
-        _slider = barObject.AddComponent<Slider>();
-        _slider.interactable = false;
-        _slider.minValue = 0f;
-        _slider.maxValue = 1f;
-        _slider.wholeNumbers = false;
-        _slider.direction = Slider.Direction.LeftToRight;
-        _slider.targetGraphic = barBackground;
-
-        GameObject fillAreaObject = CreateUiObject("Fill Area", barTransform, uiLayer);
-        RectTransform fillAreaTransform = fillAreaObject.GetComponent<RectTransform>();
-        ConfigureRect(
-            fillAreaTransform,
-            new Vector2(0f, 0f),
-            new Vector2(1f, 1f),
-            new Vector2(0.5f, 0.5f),
-            Vector2.zero,
-            new Vector2(-6f, -6f));
-
-        GameObject fillObject = CreateUiObject("Fill", fillAreaTransform, uiLayer);
-        RectTransform fillTransform = fillObject.GetComponent<RectTransform>();
-        ConfigureRect(
-            fillTransform,
-            new Vector2(0f, 0f),
-            new Vector2(1f, 1f),
-            new Vector2(0.5f, 0.5f),
-            Vector2.zero,
-            Vector2.zero);
-
-        Image fillImage = fillObject.AddComponent<Image>();
-        fillImage.sprite = uiSprite;
-        fillImage.type = Image.Type.Simple;
-        fillImage.color = new Color(0.83f, 0.35f, 0.19f, 1f);
-        fillImage.raycastTarget = false;
-
-        _slider.fillRect = fillTransform;
-        _slider.value = 1f;
+        ConfigureRootRect();
+        DisableRaycasts();
+        CacheIndicators();
+        ClearIndicators();
     }
 
-    private Sprite ResolveUiSprite()
+    private void ConfigureRootRect()
     {
-        if (s_uiSpriteResolved)
+        Vector2 sizeDelta = _panelTransform.sizeDelta;
+        _panelTransform.anchorMin = new Vector2(0.5f, 1f);
+        _panelTransform.anchorMax = new Vector2(0.5f, 1f);
+        _panelTransform.pivot = new Vector2(0.5f, 1f);
+        _panelTransform.anchoredPosition = _shownAnchoredPosition;
+        _panelTransform.sizeDelta = sizeDelta;
+        _panelTransform.localRotation = Quaternion.identity;
+    }
+
+    private void DisableRaycasts()
+    {
+        Graphic[] graphics = _panelTransform.GetComponentsInChildren<Graphic>(true);
+        int graphicIndex = 0;
+
+        while (graphicIndex < graphics.Length)
         {
-            return s_uiSprite;
+            Graphic graphic = graphics[graphicIndex];
+            graphicIndex += 1;
+
+            if (graphic == null)
+            {
+                continue;
+            }
+
+            graphic.raycastTarget = false;
         }
 
-        s_uiSpriteResolved = true;
-        Texture2D whiteTexture = Texture2D.whiteTexture;
+        Slider[] sliders = _panelTransform.GetComponentsInChildren<Slider>(true);
+        int sliderIndex = 0;
 
-        if (whiteTexture == null)
+        while (sliderIndex < sliders.Length)
         {
-            throw new InvalidOperationException(nameof(whiteTexture));
+            Slider slider = sliders[sliderIndex];
+            sliderIndex += 1;
+
+            if (slider == null)
+            {
+                continue;
+            }
+
+            slider.interactable = false;
+        }
+    }
+
+    private void CacheIndicators()
+    {
+        _sliderIndicators = _panelTransform.GetComponentsInChildren<HealthSmoothSliderIndicator>(true);
+        _textIndicators = _panelTransform.GetComponentsInChildren<HealthTextIndicator>(true);
+    }
+
+    private void ClearIndicators()
+    {
+        int sliderIndex = 0;
+
+        while (sliderIndex < _sliderIndicators.Length)
+        {
+            HealthSmoothSliderIndicator sliderIndicator = _sliderIndicators[sliderIndex];
+            sliderIndex += 1;
+
+            if (sliderIndicator == null)
+            {
+                continue;
+            }
+
+            sliderIndicator.ClearStat();
         }
 
-        s_uiSprite = Sprite.Create(
-            whiteTexture,
-            new Rect(0f, 0f, whiteTexture.width, whiteTexture.height),
-            new Vector2(0.5f, 0.5f),
-            100f);
-        s_uiSprite.name = "BossHealthOverlaySprite";
-        s_uiSprite.hideFlags = HideFlags.HideAndDontSave;
+        int textIndex = 0;
 
-        return s_uiSprite;
+        while (textIndex < _textIndicators.Length)
+        {
+            HealthTextIndicator textIndicator = _textIndicators[textIndex];
+            textIndex += 1;
+
+            if (textIndicator == null)
+            {
+                continue;
+            }
+
+            textIndicator.ClearStat();
+        }
+    }
+
+    private void BindIndicators(Health health)
+    {
+        int sliderIndex = 0;
+
+        while (sliderIndex < _sliderIndicators.Length)
+        {
+            HealthSmoothSliderIndicator sliderIndicator = _sliderIndicators[sliderIndex];
+            sliderIndex += 1;
+
+            if (sliderIndicator == null)
+            {
+                continue;
+            }
+
+            sliderIndicator.SetStat(health);
+        }
+
+        int textIndex = 0;
+
+        while (textIndex < _textIndicators.Length)
+        {
+            HealthTextIndicator textIndicator = _textIndicators[textIndex];
+            textIndex += 1;
+
+            if (textIndicator == null)
+            {
+                continue;
+            }
+
+            textIndicator.SetStat(health);
+        }
     }
 
     private void TickBossBinding()
@@ -343,20 +321,18 @@ public sealed class BossHealthOverlay : MonoBehaviour
         _boss = boss;
         _bossHealth = boss.Health;
         _roomCombatLock = roomCombatLock;
-        _bossHealth.Changed += OnBossHealthChanged;
         _bossHealth.Ended += OnBossHealthEnded;
-        _titleText.text = FormatBossTitle(boss.name);
-        UpdateHealthImmediate();
+        BindIndicators(_bossHealth);
     }
 
     private void UnbindBoss()
     {
         if (_bossHealth != null)
         {
-            _bossHealth.Changed -= OnBossHealthChanged;
             _bossHealth.Ended -= OnBossHealthEnded;
         }
 
+        ClearIndicators();
         _boss = null;
         _bossHealth = null;
         _roomCombatLock = null;
@@ -398,15 +374,17 @@ public sealed class BossHealthOverlay : MonoBehaviour
         KillVisibilitySequence();
         _panelTransform.SetAsLastSibling();
         _canvasGroup.alpha = 0f;
+        _canvasGroup.blocksRaycasts = false;
+        _canvasGroup.interactable = false;
         _panelTransform.anchoredPosition = GetEnterPosition();
-        _panelTransform.localScale = new Vector3(HiddenScale, HiddenScale, 1f);
+        _panelTransform.localScale = GetHiddenScale();
 
         _visibilitySequence = DOTween.Sequence()
             .SetUpdate(true)
             .SetLink(_panelTransform.gameObject)
             .Append(_canvasGroup.DOFade(1f, ShowDuration).SetEase(Ease.OutQuad))
             .Join(_panelTransform.DOAnchorPos(_shownAnchoredPosition, ShowDuration).SetEase(Ease.OutCubic))
-            .Join(_panelTransform.DOScale(1f, ShowDuration).SetEase(Ease.OutBack));
+            .Join(_panelTransform.DOScale(GetShownScale(), ShowDuration).SetEase(Ease.OutBack));
     }
 
     private void Hide()
@@ -424,96 +402,17 @@ public sealed class BossHealthOverlay : MonoBehaviour
             .SetLink(_panelTransform.gameObject)
             .Append(_canvasGroup.DOFade(0f, HideDuration).SetEase(Ease.InQuad))
             .Join(_panelTransform.DOAnchorPos(GetHidePosition(), HideDuration).SetEase(Ease.InCubic))
-            .Join(_panelTransform.DOScale(HiddenScale, HideDuration).SetEase(Ease.InQuad))
+            .Join(_panelTransform.DOScale(GetHiddenScale(), HideDuration).SetEase(Ease.InQuad))
             .OnComplete(ApplyHiddenState);
-    }
-
-    private void UpdateHealthImmediate()
-    {
-        if (_bossHealth == null)
-        {
-            return;
-        }
-
-        float normalizedValue = GetNormalizedValue();
-        _slider.value = normalizedValue;
-        _valueText.text = FormatHealthValue();
-    }
-
-    private void UpdateHealthAnimated()
-    {
-        if (_bossHealth == null)
-        {
-            return;
-        }
-
-        float normalizedValue = GetNormalizedValue();
-        _valueText.text = FormatHealthValue();
-        KillSliderTween();
-        _sliderTween = _slider.DOValue(normalizedValue, SliderDuration).SetEase(Ease.OutQuad);
-    }
-
-    private float GetNormalizedValue()
-    {
-        if (_bossHealth.MaxValue <= 0f)
-        {
-            return 0f;
-        }
-
-        return Mathf.Clamp01(_bossHealth.Value / _bossHealth.MaxValue);
-    }
-
-    private string FormatHealthValue()
-    {
-        int currentValue = Mathf.CeilToInt(_bossHealth.Value);
-        int maxValue = Mathf.CeilToInt(_bossHealth.MaxValue);
-
-        return currentValue + " / " + maxValue;
-    }
-
-    private string FormatBossTitle(string sourceName)
-    {
-        if (string.IsNullOrWhiteSpace(sourceName))
-        {
-            return "BOSS";
-        }
-
-        string cleanName = sourceName.Replace("(Clone)", string.Empty).Trim();
-
-        if (string.IsNullOrWhiteSpace(cleanName))
-        {
-            return "BOSS";
-        }
-
-        StringBuilder stringBuilder = new StringBuilder(cleanName.Length + 6);
-        int charIndex = 0;
-
-        while (charIndex < cleanName.Length)
-        {
-            char currentChar = cleanName[charIndex];
-
-            if (charIndex > 0)
-            {
-                char previousChar = cleanName[charIndex - 1];
-
-                if (char.IsUpper(currentChar) && char.IsLetter(previousChar) && char.IsUpper(previousChar) == false)
-                {
-                    stringBuilder.Append(' ');
-                }
-            }
-
-            stringBuilder.Append(char.ToUpperInvariant(currentChar));
-            charIndex += 1;
-        }
-
-        return stringBuilder.ToString();
     }
 
     private void ApplyHiddenState()
     {
         _canvasGroup.alpha = 0f;
+        _canvasGroup.blocksRaycasts = false;
+        _canvasGroup.interactable = false;
         _panelTransform.anchoredPosition = GetEnterPosition();
-        _panelTransform.localScale = new Vector3(HiddenScale, HiddenScale, 1f);
+        _panelTransform.localScale = GetHiddenScale();
     }
 
     private Vector2 GetEnterPosition()
@@ -526,14 +425,21 @@ public sealed class BossHealthOverlay : MonoBehaviour
         return _shownAnchoredPosition + new Vector2(0f, HideOffsetY);
     }
 
-    private void OnBossHealthChanged()
+    private Vector3 GetShownScale()
     {
-        UpdateHealthAnimated();
+        return new Vector3(VisibleScale, VisibleScale, 1f);
+    }
+
+    private Vector3 GetHiddenScale()
+    {
+        float hiddenScale = VisibleScale * HiddenScaleMultiplier;
+
+        return new Vector3(hiddenScale, hiddenScale, 1f);
     }
 
     private void OnBossHealthEnded()
     {
-        UpdateHealthImmediate();
+        Hide();
     }
 
     private void KillVisibilitySequence()
@@ -549,71 +455,5 @@ public sealed class BossHealthOverlay : MonoBehaviour
         }
 
         _visibilitySequence = null;
-    }
-
-    private void KillSliderTween()
-    {
-        if (_sliderTween == null)
-        {
-            return;
-        }
-
-        if (_sliderTween.IsActive())
-        {
-            _sliderTween.Kill(false);
-        }
-
-        _sliderTween = null;
-    }
-
-    private GameObject CreateUiObject(string objectName, Transform parentTransform, int layer)
-    {
-        GameObject gameObject = new GameObject(objectName, typeof(RectTransform));
-        gameObject.layer = layer;
-        gameObject.transform.SetParent(parentTransform, false);
-
-        return gameObject;
-    }
-
-    private RectTransform CreateImageRect(string objectName, Transform parentTransform, int layer, Sprite sprite, Color color)
-    {
-        GameObject imageObject = CreateUiObject(objectName, parentTransform, layer);
-        Image image = imageObject.AddComponent<Image>();
-        image.sprite = sprite;
-        image.type = Image.Type.Simple;
-        image.color = color;
-        image.raycastTarget = false;
-
-        return imageObject.GetComponent<RectTransform>();
-    }
-
-    private TextMeshProUGUI CreateText(string objectName, Transform parentTransform, int layer, float fontSize, FontStyles fontStyle)
-    {
-        GameObject textObject = CreateUiObject(objectName, parentTransform, layer);
-        TextMeshProUGUI text = textObject.AddComponent<TextMeshProUGUI>();
-        text.font = _fontAsset;
-        text.fontSize = fontSize;
-        text.fontStyle = fontStyle;
-        text.color = new Color(0.97f, 0.94f, 0.86f, 1f);
-        text.raycastTarget = false;
-
-        return text;
-    }
-
-    private void ConfigureRect(
-        RectTransform rectTransform,
-        Vector2 anchorMin,
-        Vector2 anchorMax,
-        Vector2 pivot,
-        Vector2 anchoredPosition,
-        Vector2 sizeDelta)
-    {
-        rectTransform.anchorMin = anchorMin;
-        rectTransform.anchorMax = anchorMax;
-        rectTransform.pivot = pivot;
-        rectTransform.anchoredPosition = anchoredPosition;
-        rectTransform.sizeDelta = sizeDelta;
-        rectTransform.localScale = Vector3.one;
-        rectTransform.localRotation = Quaternion.identity;
     }
 }
