@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2dd3307af0debb4409591fc6d8657b17, type: 3}
   m_Name: BossExcavatorConfig
   m_EditorClassIdentifier: Assembly-CSharp::JunkyardBoss.BossExcavatorConfig
-  _maxHealth: 280
+  _maxHealth: 670
   _phaseTwoRatio: 0.5
   _phaseChangeDuration: 0.9
   _phaseTwoAttackSpeedMult: 1.25
