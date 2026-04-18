@@ -7,7 +7,9 @@ namespace JunkyardBoss
     [DisallowMultipleComponent]
     public sealed class BossScrapTrailBlock : MonoBehaviour
     {
+        private const float RiseDuration = 1.15f;
         private const float SinkDuration = 1.15f;
+        private const float RiseDistanceFactor = 1.35f;
         private const float SinkDistanceFactor = 1.35f;
 
         [SerializeField] private BoxCollider _boxCollider;
@@ -15,12 +17,16 @@ namespace JunkyardBoss
         private readonly List<Collider> _ignoredColliders = new List<Collider>(16);
 
         private BossScrapTrailBlockSpawner _spawner;
+        private float _riseTimer;
         private float _lifetimeTimer;
         private float _sinkTimer;
+        private Vector3 _riseStartPoint;
+        private Vector3 _riseEndPoint;
         private Vector3 _sinkStartPoint;
         private Vector3 _sinkEndPoint;
         private bool _isActive;
         private bool _isReturned;
+        private bool _isRising;
         private bool _isSinking;
 
         public void BindSpawner(BossScrapTrailBlockSpawner spawner)
@@ -50,16 +56,23 @@ namespace JunkyardBoss
                 throw new InvalidOperationException(nameof(lifetime));
             }
 
-            transform.SetPositionAndRotation(position, rotation);
+            Vector3 riseOffset = Vector3.down * GetRiseDistance(size);
+            Vector3 riseStartPoint = position + riseOffset;
+
+            transform.SetPositionAndRotation(riseStartPoint, rotation);
             transform.localScale = size;
+            _riseTimer = 0f;
             _lifetimeTimer = lifetime;
             _sinkTimer = 0f;
+            _riseStartPoint = riseStartPoint;
+            _riseEndPoint = position;
             _sinkStartPoint = position;
             _sinkEndPoint = position;
             _isActive = true;
             _isReturned = false;
+            _isRising = true;
             _isSinking = false;
-            _boxCollider.enabled = true;
+            _boxCollider.enabled = false;
 
             ApplyIgnoredCollisions(ignoredColliders);
         }
@@ -76,6 +89,13 @@ namespace JunkyardBoss
         {
             if (_isActive == false)
             {
+                return;
+            }
+
+            if (_isRising)
+            {
+                TickRise();
+
                 return;
             }
 
@@ -99,8 +119,10 @@ namespace JunkyardBoss
         private void OnDisable()
         {
             _isActive = false;
+            _riseTimer = 0f;
             _lifetimeTimer = 0f;
             _sinkTimer = 0f;
+            _isRising = false;
             _isSinking = false;
             _boxCollider.enabled = true;
             RestoreIgnoredCollisions();
@@ -188,6 +210,22 @@ namespace JunkyardBoss
             _boxCollider.enabled = false;
         }
 
+        private void TickRise()
+        {
+            _riseTimer += Time.deltaTime;
+
+            float riseProgress = Mathf.Clamp01(_riseTimer / RiseDuration);
+            transform.position = Vector3.Lerp(_riseStartPoint, _riseEndPoint, riseProgress);
+
+            if (riseProgress < 1f)
+            {
+                return;
+            }
+
+            _isRising = false;
+            _boxCollider.enabled = true;
+        }
+
         private void TickSink()
         {
             _sinkTimer += Time.deltaTime;
@@ -206,6 +244,11 @@ namespace JunkyardBoss
         private float GetSinkDistance()
         {
             return Mathf.Max(transform.localScale.y * SinkDistanceFactor, 0.25f);
+        }
+
+        private float GetRiseDistance(Vector3 size)
+        {
+            return Mathf.Max(size.y * RiseDistanceFactor, 0.25f);
         }
     }
 }
