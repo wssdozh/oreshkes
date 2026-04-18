@@ -18,6 +18,15 @@ namespace JunkyardBoss
                 return _pendingAttack;
             }
 
+            BossExcavatorAttack queuedFallbackAttack = ResolveQueuedAttackFallback(targetDistance, baseAngle, cabinAngle);
+
+            if (queuedFallbackAttack != BossExcavatorAttack.None)
+            {
+                _pendingAttack = queuedFallbackAttack;
+
+                return _pendingAttack;
+            }
+
             if (ShouldReserveWindowForScrapTrail(targetDistance))
             {
                 return BossExcavatorAttack.None;
@@ -56,7 +65,7 @@ namespace JunkyardBoss
 
             if (_queuedAttackTimer <= 0f)
             {
-                return false;
+                return ShouldHoldExpiredQueuedAttack(targetDistance);
             }
 
             if (CanQueueAttack(_queuedAttack) == false)
@@ -87,6 +96,26 @@ namespace JunkyardBoss
             }
 
             return false;
+        }
+
+        private bool ShouldHoldExpiredQueuedAttack(float targetDistance)
+        {
+            if (_queuedAttack == BossExcavatorAttack.BucketStrike)
+            {
+                return ShouldKeepBucketFallbackQueued(targetDistance);
+            }
+
+            return false;
+        }
+
+        private bool ShouldKeepBucketFallbackQueued(float targetDistance)
+        {
+            if (targetDistance > GetBucketAttackStartDistance())
+            {
+                return false;
+            }
+
+            return true;
         }
 
         private BossExcavatorAttack SelectQueuedAttack(float targetDistance)
@@ -356,6 +385,67 @@ namespace JunkyardBoss
             }
 
             return bestAttack;
+        }
+
+        private BossExcavatorAttack ResolveQueuedAttackFallback(float targetDistance, float baseAngle, float cabinAngle)
+        {
+            if (_queuedAttack != BossExcavatorAttack.BucketStrike)
+            {
+                return BossExcavatorAttack.None;
+            }
+
+            if (ShouldKeepBucketFallbackQueued(targetDistance) == false)
+            {
+                return BossExcavatorAttack.None;
+            }
+
+            if (ShouldUseBucketWhiff(baseAngle))
+            {
+                return BossExcavatorAttack.BucketStrike;
+            }
+
+            BossExcavatorAttack replacementAttack = SelectBucketReplacementAttack(targetDistance, baseAngle, cabinAngle);
+
+            if (replacementAttack == BossExcavatorAttack.None)
+            {
+                return BossExcavatorAttack.None;
+            }
+
+            SetQueuedAttack(replacementAttack);
+
+            return replacementAttack;
+        }
+
+        private bool ShouldUseBucketWhiff(float baseAngle)
+        {
+            float bucketWhiffAngle = _boss.Config.RepositionBaseAngle;
+
+            if (baseAngle > bucketWhiffAngle)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        private BossExcavatorAttack SelectBucketReplacementAttack(float targetDistance, float baseAngle, float cabinAngle)
+        {
+            if (CanUseSweep(targetDistance, cabinAngle))
+            {
+                return BossExcavatorAttack.Sweep;
+            }
+
+            if (CanUseCharge(targetDistance, baseAngle))
+            {
+                return BossExcavatorAttack.Charge;
+            }
+
+            if (CanUseThrow(targetDistance, baseAngle, cabinAngle))
+            {
+                return BossExcavatorAttack.ThrowScrap;
+            }
+
+            return BossExcavatorAttack.None;
         }
 
         private bool CanUseAttackForQueue(BossExcavatorAttack attack, bool allowRepeat)

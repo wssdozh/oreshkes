@@ -8,12 +8,16 @@ namespace JunkyardBoss
     {
         private const float MinDirectionSqr = 0.0001f;
         private const int HitBufferCount = 20;
+        private const int GroundHitBufferCount = 8;
+        private const string ScrapTrailSpawnerKey = "BossScrapTrailBlock";
 
         private readonly BossExcavator _boss;
         private readonly BossExcavatorConfig _config;
         private readonly Collider[] _hitBuffer;
+        private readonly RaycastHit[] _groundHitBuffer;
         private readonly HashSet<int> _damagedHealthIds;
 
+        private BossScrapTrailBlockSpawner _scrapTrailBlockSpawner;
         private float _telegraphTimer;
         private float _strikeTimer;
         private float _recoverTimer;
@@ -41,6 +45,7 @@ namespace JunkyardBoss
             _boss = boss;
             _config = config;
             _hitBuffer = new Collider[HitBufferCount];
+            _groundHitBuffer = new RaycastHit[GroundHitBufferCount];
             _damagedHealthIds = new HashSet<int>();
             Reset();
         }
@@ -286,6 +291,7 @@ namespace JunkyardBoss
             if (nearestHealth == null)
             {
                 ApplyShockwave(hitCenter);
+                TrySpawnPhaseTwoMegaTrench(bucket.position, strikeForward);
 
                 return;
             }
@@ -293,6 +299,7 @@ namespace JunkyardBoss
             _damagedHealthIds.Add(nearestHealth.GetInstanceID());
             nearestHealth.Decrease(_config.BucketHitDamage * GetPhaseDamageMult());
             ApplyShockwave(hitCenter);
+            TrySpawnPhaseTwoMegaTrench(bucket.position, strikeForward);
         }
 
         private bool IsInsideHitSector(Vector3 hitCenter, Vector3 strikeForward, Vector3 targetPoint)
@@ -423,6 +430,235 @@ namespace JunkyardBoss
 
                 _damagedHealthIds.Add(healthId);
                 hitHealth.Decrease(_config.BucketShockwaveDamage * GetPhaseDamageMult());
+            }
+        }
+
+        private void TrySpawnPhaseTwoMegaTrench(Vector3 bucketPosition, Vector3 strikeForward)
+        {
+            if (_boss.Phase != BossExcavatorPhase.PhaseTwo)
+            {
+                return;
+            }
+
+            Vector3 trenchDirection = ResolveMegaTrenchDirection(strikeForward);
+
+            if (trenchDirection.sqrMagnitude <= MinDirectionSqr)
+            {
+                return;
+            }
+
+            ValidateScrapTrailDependencies();
+
+            Vector3 startPoint;
+
+            if (TryResolveGroundPoint(bucketPosition, out startPoint) == false)
+            {
+                return;
+            }
+
+            Vector3 endPoint = ResolveRoomEdgePoint(startPoint, trenchDirection);
+            float trenchLength = Vector3.Distance(startPoint, endPoint);
+
+            if (trenchLength <= 0f)
+            {
+                return;
+            }
+
+            float spawnSpacing = Mathf.Max(0.1f, _config.ScrapTrailSpawnSpacing);
+            int spawnCount = Mathf.Max(1, Mathf.CeilToInt(trenchLength / spawnSpacing));
+            int spawnIndex = 0;
+
+            while (spawnIndex <= spawnCount)
+            {
+                float progress = spawnCount > 0 ? (float)spawnIndex / spawnCount : 0f;
+                Vector3 samplePoint = Vector3.Lerp(startPoint, endPoint, progress);
+                Vector3 spawnPoint;
+
+                if (TryResolveGroundPoint(samplePoint, out spawnPoint))
+                {
+                    SpawnTrenchBlock(spawnPoint);
+                }
+
+                spawnIndex += 1;
+            }
+        }
+
+        private void SpawnTrenchBlock(Vector3 spawnPoint)
+        {
+            Quaternion spawnRotation = Quaternion.Euler(
+                UnityEngine.Random.Range(0f, 360f),
+                UnityEngine.Random.Range(0f, 360f),
+                UnityEngine.Random.Range(0f, 360f));
+
+            _scrapTrailBlockSpawner.Spawn(
+                spawnPoint,
+                spawnRotation,
+                _config.ScrapTrailBlockSize,
+                _config.ScrapTrailBlockLifetime,
+                _boss.Move.BodyColliders);
+        }
+
+        private Vector3 ResolveMegaTrenchDirection(Vector3 strikeForward)
+        {
+            Transform cabin = _boss.Cabin;
+
+            if (cabin != null)
+            {
+                Vector3 cabinForward = cabin.forward;
+                cabinForward.y = 0f;
+
+                if (cabinForward.sqrMagnitude > MinDirectionSqr)
+                {
+                    return cabinForward.normalized;
+                }
+            }
+
+            Transform bucket = _boss.Bucket;
+
+            if (bucket != null)
+            {
+                Vector3 bucketForward = bucket.forward;
+                bucketForward.y = 0f;
+
+                if (bucketForward.sqrMagnitude > MinDirectionSqr)
+                {
+                    return bucketForward.normalized;
+                }
+            }
+
+            Vector3 planarStrikeForward = strikeForward;
+            planarStrikeForward.y = 0f;
+
+            if (planarStrikeForward.sqrMagnitude > MinDirectionSqr)
+            {
+                return planarStrikeForward.normalized;
+            }
+
+            return Vector3.zero;
+        }
+
+        private bool TryResolveGroundPoint(Vector3 samplePoint, out Vector3 groundPoint)
+        {
+            Vector3 rayOrigin = samplePoint + Vector3.up * _config.ScrapTrailGroundProbeHeight;
+            int hitCount = Physics.RaycastNonAlloc(
+                rayOrigin,
+                Vector3.down,
+                _groundHitBuffer,
+                _config.ScrapTrailGroundProbeDistance,
+                _config.ScrapTrailGroundMask,
+                QueryTriggerInteraction.Ignore);
+            int hitIndex = 0;
+
+            while (hitIndex < hitCount)
+            {
+                RaycastHit groundHit = _groundHitBuffer[hitIndex];
+                hitIndex += 1;
+
+                if (groundHit.collider == null)
+                {
+                    continue;
+                }
+
+                if (groundHit.collider.transform.IsChildOf(_boss.transform))
+                {
+                    continue;
+                }
+
+                groundPoint = groundHit.point;
+
+                return true;
+            }
+
+            groundPoint = samplePoint;
+            groundPoint.y = _boss.Base.position.y;
+
+            return true;
+        }
+
+        private Vector3 ResolveRoomEdgePoint(Vector3 startPoint, Vector3 strikeForward)
+        {
+            RoomRuntimeState roomRuntimeState = _boss.Base.GetComponentInParent<RoomRuntimeState>();
+
+            if (roomRuntimeState == null)
+            {
+                return startPoint + strikeForward.normalized * _config.ScrapTrailMaxDistance;
+            }
+
+            Bounds roomBounds = roomRuntimeState.GetRoomBounds();
+            Vector3 planarDirection = strikeForward.normalized;
+            float bestDistance = float.MaxValue;
+
+            TryUpdateEdgeDistance(startPoint.x, planarDirection.x, roomBounds.min.x, startPoint.z, planarDirection.z, roomBounds.min.z, roomBounds.max.z, ref bestDistance);
+            TryUpdateEdgeDistance(startPoint.x, planarDirection.x, roomBounds.max.x, startPoint.z, planarDirection.z, roomBounds.min.z, roomBounds.max.z, ref bestDistance);
+            TryUpdateEdgeDistance(startPoint.z, planarDirection.z, roomBounds.min.z, startPoint.x, planarDirection.x, roomBounds.min.x, roomBounds.max.x, ref bestDistance);
+            TryUpdateEdgeDistance(startPoint.z, planarDirection.z, roomBounds.max.z, startPoint.x, planarDirection.x, roomBounds.min.x, roomBounds.max.x, ref bestDistance);
+
+            if (bestDistance == float.MaxValue)
+            {
+                return roomBounds.ClosestPoint(startPoint + planarDirection * Mathf.Max(roomBounds.size.x, roomBounds.size.z));
+            }
+
+            Vector3 edgePoint = startPoint + planarDirection * bestDistance;
+            edgePoint.y = startPoint.y;
+
+            return edgePoint;
+        }
+
+        private void TryUpdateEdgeDistance(
+            float originAxis,
+            float directionAxis,
+            float planeAxis,
+            float originOtherAxis,
+            float directionOtherAxis,
+            float minOtherAxis,
+            float maxOtherAxis,
+            ref float bestDistance)
+        {
+            if (Mathf.Abs(directionAxis) <= MinDirectionSqr)
+            {
+                return;
+            }
+
+            float distance = (planeAxis - originAxis) / directionAxis;
+
+            if (distance <= 0f)
+            {
+                return;
+            }
+
+            float otherAxis = originOtherAxis + (directionOtherAxis * distance);
+
+            if (otherAxis < minOtherAxis || otherAxis > maxOtherAxis)
+            {
+                return;
+            }
+
+            if (distance < bestDistance)
+            {
+                bestDistance = distance;
+            }
+        }
+
+        private void ValidateScrapTrailDependencies()
+        {
+            if (_boss.Move == null)
+            {
+                throw new InvalidOperationException(nameof(_boss.Move));
+            }
+
+            if (_boss.Move.BodyColliders == null)
+            {
+                throw new InvalidOperationException(nameof(_boss.Move.BodyColliders));
+            }
+
+            if (_scrapTrailBlockSpawner == null)
+            {
+                _scrapTrailBlockSpawner = SpawnerServiceLocator.Find<BossScrapTrailBlock>(ScrapTrailSpawnerKey) as BossScrapTrailBlockSpawner;
+            }
+
+            if (_scrapTrailBlockSpawner == null)
+            {
+                throw new InvalidOperationException(nameof(_scrapTrailBlockSpawner));
             }
         }
 
