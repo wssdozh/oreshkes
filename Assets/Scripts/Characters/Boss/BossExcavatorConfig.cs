@@ -432,6 +432,12 @@ namespace JunkyardBoss
 
         [SerializeField] private Vector3 _armTrailScrapeBucketEuler = new Vector3(0f, 0f, -42f);
 
+        [SerializeField] private Vector3 _armChargeBraceBoomEuler = new Vector3(0f, 0f, -38f);
+
+        [SerializeField] private Vector3 _armChargeBraceStickEuler = new Vector3(0f, 0f, 102f);
+
+        [SerializeField] private Vector3 _armChargeBraceBucketEuler = new Vector3(0f, 0f, -34f);
+
         [SerializeField] private BossExcavatorAxis _armBoomAxis = BossExcavatorAxis.X;
 
         [SerializeField] private BossExcavatorAxis _armStickAxis = BossExcavatorAxis.X;
@@ -612,6 +618,9 @@ namespace JunkyardBoss
         public Vector3 ArmTrailScrapeBoomEuler => _armTrailScrapeBoomEuler;
         public Vector3 ArmTrailScrapeStickEuler => _armTrailScrapeStickEuler;
         public Vector3 ArmTrailScrapeBucketEuler => _armTrailScrapeBucketEuler;
+        public Vector3 ArmChargeBraceBoomEuler => _armChargeBraceBoomEuler;
+        public Vector3 ArmChargeBraceStickEuler => _armChargeBraceStickEuler;
+        public Vector3 ArmChargeBraceBucketEuler => _armChargeBraceBucketEuler;
         public BossExcavatorAxis ArmBoomAxis => _armBoomAxis;
         public BossExcavatorAxis ArmStickAxis => _armStickAxis;
         public BossExcavatorAxis ArmBucketAxis => _armBucketAxis;

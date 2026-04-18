@@ -8,6 +8,7 @@ namespace JunkyardBoss
         GrabScrap = 3,
         ThrowScrap = 4,
         TrailScrape = 5,
-        Custom = 6
+        ChargeBrace = 6,
+        Custom = 7
     }
 }
