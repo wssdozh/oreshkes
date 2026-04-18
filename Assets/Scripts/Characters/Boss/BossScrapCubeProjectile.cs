@@ -24,11 +24,21 @@ namespace JunkyardBoss
                 return;
             }
 
+            if (IsBossMinionCollider(other))
+            {
+                return;
+            }
+
             health.Decrease(Damage);
         }
 
         protected override bool ShouldIgnoreCollision(Collider other)
         {
+            if (IsBossMinionCollider(other))
+            {
+                return true;
+            }
+
             if (IsPlayerCollider(other))
             {
                 return false;
@@ -62,6 +72,23 @@ namespace JunkyardBoss
             }
 
             return true;
+        }
+
+        private bool IsBossMinionCollider(Collider other)
+        {
+            Transform current = other.transform;
+
+            while (current != null)
+            {
+                if (current.name == BossExcavatorPhaseThreeController.MinionsRootName)
+                {
+                    return true;
+                }
+
+                current = current.parent;
+            }
+
+            return false;
         }
 
         private bool IsPlayerCollider(Collider other)

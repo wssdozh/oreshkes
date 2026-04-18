@@ -292,6 +292,11 @@ namespace JunkyardBoss
                     continue;
                 }
 
+                if (_boss.IsFriendlyMinion(hitHealth))
+                {
+                    continue;
+                }
+
                 Vector3 targetPoint = hitHealth.transform.position;
 
                 if (IsInsideHitSector(hitCenter, strikeForward, targetPoint) == false)
@@ -453,6 +458,11 @@ namespace JunkyardBoss
                 Health hitHealth = hitCollider.GetComponentInParent<Health>();
 
                 if (hitHealth == null)
+                {
+                    continue;
+                }
+
+                if (_boss.IsFriendlyMinion(hitHealth))
                 {
                     continue;
                 }
