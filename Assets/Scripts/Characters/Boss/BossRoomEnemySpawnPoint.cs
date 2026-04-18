@@ -406,8 +406,13 @@ namespace JunkyardBoss
 
                 _disabledRigidbodies.Add(rigidbody);
                 _disabledRigidbodiesWasKinematic.Add(rigidbody.isKinematic);
-                rigidbody.linearVelocity = Vector3.zero;
-                rigidbody.angularVelocity = Vector3.zero;
+
+                if (rigidbody.isKinematic == false)
+                {
+                    rigidbody.linearVelocity = Vector3.zero;
+                    rigidbody.angularVelocity = Vector3.zero;
+                }
+
                 rigidbody.isKinematic = true;
             }
 
@@ -526,9 +531,9 @@ namespace JunkyardBoss
 
             _currentMinion.Died -= OnCurrentMinionDied;
 
-            if (_currentRootObject != null)
+            if (_currentRootObject != null && _isRising)
             {
-                UnityEngine.Object.Destroy(_currentRootObject);
+                _currentRootObject.transform.position = _riseEndPoint;
             }
 
             ClearCurrentRuntime();

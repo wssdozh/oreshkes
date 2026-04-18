@@ -263,6 +263,11 @@ namespace JunkyardBoss
                     continue;
                 }
 
+                if (_boss.IsFriendlyMinion(hitHealth))
+                {
+                    continue;
+                }
+
                 int healthId = hitHealth.GetInstanceID();
 
                 if (_hitHealthIds.Contains(healthId))

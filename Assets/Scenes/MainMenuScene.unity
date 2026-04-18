@@ -2163,6 +2163,12 @@ MonoBehaviour:
   _screenButton: {fileID: 1365978279}
   _screenButtonImage: {fileID: 1365978278}
   _screenButtonText: {fileID: 206139228}
+  _vSyncOffButton: {fileID: 2146201036}
+  _vSyncOffButtonImage: {fileID: 2146201035}
+  _vSyncOffButtonText: {fileID: 2146201043}
+  _vSyncOnButton: {fileID: 2146201056}
+  _vSyncOnButtonImage: {fileID: 2146201055}
+  _vSyncOnButtonText: {fileID: 2146201063}
   _lowQualityButton: {fileID: 1206745020}
   _lowQualityButtonImage: {fileID: 1206745019}
   _lowQualityButtonText: {fileID: 1830374443}

@@ -327,6 +327,28 @@ namespace JunkyardBoss
             return 1f;
         }
 
+        public bool IsFriendlyMinion(Health health)
+        {
+            if (health == null)
+            {
+                return false;
+            }
+
+            Transform current = health.transform;
+
+            while (current != null)
+            {
+                if (current.name == BossExcavatorPhaseThreeController.MinionsRootName)
+                {
+                    return true;
+                }
+
+                current = current.parent;
+            }
+
+            return false;
+        }
+
         public float GetPhaseChargeSpeedMult()
         {
             if (_phase == BossExcavatorPhase.PhaseThree)

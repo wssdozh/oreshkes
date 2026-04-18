@@ -6,7 +6,7 @@ namespace JunkyardBoss
 {
     public sealed class BossExcavatorPhaseThreeController
     {
-        private const string MinionsRootName = "Boss Phase Three Minions";
+        public const string MinionsRootName = "Boss Phase Three Minions";
         private const float AlertInterval = 0.12f;
 
         private readonly BossExcavator _boss;
