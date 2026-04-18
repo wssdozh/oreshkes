@@ -6,7 +6,7 @@ namespace JunkyardBoss
     public sealed class BossExcavatorConfig : ScriptableObject
     {
         [Min(1f)]
-        [SerializeField] private float _maxHealth = 280f;
+        [SerializeField] private float _maxHealth = 670f;
 
         [Range(0.05f, 0.95f)]
         [SerializeField] private float _phaseTwoRatio = 0.5f;

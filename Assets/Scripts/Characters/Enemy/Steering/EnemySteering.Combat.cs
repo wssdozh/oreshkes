@@ -17,7 +17,8 @@ public sealed partial class EnemySteering
 
         Vector3 targetDirection = toTarget.normalized;
         Vector3 chasePoint = GetChasePoint(currentPoint, flatTargetPoint, targetDirection, ringDistance, toTarget.magnitude);
-        Vector3 safePoint = GetSafePoint(chasePoint, _probeRadius);
+        float safeGap = GetNearProbeDistance();
+        Vector3 safePoint = GetSafePoint(chasePoint, safeGap);
         float stopDistance = Mathf.Max(ringTolerance, 0.05f);
 
         if (lookBlend > 0f)
@@ -71,7 +72,9 @@ public sealed partial class EnemySteering
             desiredDirection = tangentDirection;
         }
 
-        Vector3 movePoint = currentPoint + (desiredDirection * Mathf.Max(_probeDistance, 0.6f));
+        float safeGap = GetNearProbeDistance();
+        Vector3 movePoint = currentPoint + (desiredDirection * Mathf.Max(_probeDistance, safeGap));
+        movePoint = GetSafePoint(movePoint, safeGap);
 
         return MoveToPoint(movePoint, 0.05f, targetPoint);
     }
@@ -106,7 +109,9 @@ public sealed partial class EnemySteering
             desiredDirection = -targetDirection;
         }
 
-        Vector3 movePoint = currentPoint + (desiredDirection * Mathf.Max(_probeDistance, 0.6f));
+        float safeGap = GetNearProbeDistance();
+        Vector3 movePoint = currentPoint + (desiredDirection * Mathf.Max(_probeDistance, safeGap));
+        movePoint = GetSafePoint(movePoint, safeGap);
 
         return MoveToPoint(movePoint, 0.05f, targetPoint);
     }

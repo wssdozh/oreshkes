@@ -78,6 +78,21 @@ public sealed partial class EnemyMeleeBrain
 
     private void ProcessIdleLook()
     {
+        Vector3 currentPoint = GetFlatPoint(transform.position);
+
+        if (_enemySteering.HasWallGap(currentPoint, GetMoveWallGap()) == false)
+        {
+            StartIdleWalk();
+
+            if (_isIdleWalking)
+            {
+                _state = EnemyState.Patrol;
+                ProcessIdleWalk();
+
+                return;
+            }
+        }
+
         ResetMoveStuck();
         _enemySteering.LookToPoint(_idleLookPoint);
         _idleTimer -= Time.fixedDeltaTime;
@@ -272,17 +287,19 @@ public sealed partial class EnemyMeleeBrain
         Vector3 searchDirection = GetSearchDirection();
 
         ClearSearch();
-        _isSearchIdle = true;
-
-        _state = EnemyState.Watch;
         _idleDirection = searchDirection;
-        _isIdleWalking = false;
         _idleLastDistance = -1f;
         _idleStuckTimer = 0f;
-        _idleChain = 0;
-        _idleTimer = GetIdleWait();
-        _idleLookPoint = transform.position + (_idleDirection * LookDistance);
-        _enemySteering.Stop();
+        StartIdleWalk();
+
+        if (_isIdleWalking)
+        {
+            _state = EnemyState.Patrol;
+
+            return;
+        }
+
+        _state = EnemyState.Watch;
     }
 
     private bool TryEscapeSearchPoint(Vector3 currentPoint, float wallGap)
