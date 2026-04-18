@@ -96,7 +96,7 @@ namespace JunkyardBoss
             _boss.SetChargeAlign(false);
             _boss.SetAimLocked(true);
             _boss.SetArmLocked(false);
-            _boss.SetArmPose(BossExcavatorArmPose.TrailScrape, GetAttackPoseSpeedMult());
+            _boss.SetArmPose(BossExcavatorArmPose.ChargeBrace, GetAttackPoseSpeedMult());
         }
 
         public bool Tick()

@@ -9,6 +9,11 @@ namespace JunkyardBoss
         private const string ScrapCubeSpawnerKey = "BossScrapCubeProjectile";
         private const float SpawnForwardPadding = 0.55f;
         private const float SpawnHeightOffset = 0.75f;
+        private const float ThrowPoseSnapSpeedMult = 1.8f;
+        private const float ThrowLaunchDelayFactor = 0.22f;
+        private const float MinThrowLaunchDelay = 0.04f;
+        private const float MaxThrowLaunchDelay = 0.1f;
+        private const float ReleaseHitStopDuration = 0.045f;
 
         private readonly BossExcavator _boss;
         private readonly BossExcavatorConfig _config;
@@ -18,6 +23,7 @@ namespace JunkyardBoss
         private float _throwTimer;
         private float _recoverTimer;
         private float _launchDelayTimer;
+        private float _releaseHitStopTimer;
         private bool _isRunning;
         private bool _isProjectileLaunched;
 
@@ -46,6 +52,7 @@ namespace JunkyardBoss
             _throwTimer = 0f;
             _recoverTimer = 0f;
             _launchDelayTimer = 0f;
+            _releaseHitStopTimer = 0f;
             _isRunning = false;
             _isProjectileLaunched = false;
         }
@@ -58,6 +65,7 @@ namespace JunkyardBoss
             _throwTimer = 0f;
             _recoverTimer = GetRecoverTime();
             _launchDelayTimer = 0f;
+            _releaseHitStopTimer = 0f;
             _isRunning = true;
             _isProjectileLaunched = false;
 
@@ -72,6 +80,13 @@ namespace JunkyardBoss
             if (_isRunning == false)
             {
                 return false;
+            }
+
+            if (_releaseHitStopTimer > 0f)
+            {
+                TickReleaseHitStop();
+
+                return true;
             }
 
             if (_grabTimer > 0f)
@@ -137,7 +152,9 @@ namespace JunkyardBoss
             _throwTimer = 0f;
             _recoverTimer = 0f;
             _launchDelayTimer = 0f;
+            _releaseHitStopTimer = 0f;
             _boss.SetAimLocked(false);
+            _boss.SetArmLocked(false);
 
             if (restoreNeutralPose)
             {
@@ -150,14 +167,15 @@ namespace JunkyardBoss
             float throwPoseTravelTime = GetThrowPoseTravelTime();
 
             _throwTimer = Mathf.Max(GetThrowTime(), throwPoseTravelTime);
-            _launchDelayTimer = Mathf.Max(0.05f, Mathf.Min(_throwTimer * 0.6f, throwPoseTravelTime * 0.55f));
+            _launchDelayTimer = Mathf.Clamp(throwPoseTravelTime * ThrowLaunchDelayFactor, MinThrowLaunchDelay, MaxThrowLaunchDelay);
             _boss.SetAimLocked(true);
-            _boss.SetArmPose(BossExcavatorArmPose.ThrowScrap, GetAttackPoseSpeedMult());
+            _boss.SetArmPose(BossExcavatorArmPose.ThrowScrap, GetThrowPoseSpeedMult());
         }
 
         private void BeginRecover()
         {
             _boss.SetAimLocked(false);
+            _boss.SetArmLocked(false);
             _boss.SetArmPose(BossExcavatorArmPose.Neutral, GetAttackPoseSpeedMult());
         }
 
@@ -165,6 +183,7 @@ namespace JunkyardBoss
         {
             _isRunning = false;
             _boss.SetAimLocked(false);
+            _boss.SetArmLocked(false);
         }
 
         private void LaunchProjectiles()
@@ -192,6 +211,8 @@ namespace JunkyardBoss
 
                 projectileIndex += 1;
             }
+
+            BeginReleaseHitStop();
         }
 
         private Vector3 ResolveSpawnPosition(Vector3 bucketPosition, Vector3 launchForward)
@@ -391,7 +412,28 @@ namespace JunkyardBoss
 
         private float GetThrowPoseTravelTime()
         {
-            return _boss.Arm.GetPoseTravelTime(BossExcavatorArmPose.ThrowScrap, GetAttackPoseSpeedMult());
+            return _boss.Arm.GetPoseTravelTime(BossExcavatorArmPose.ThrowScrap, GetThrowPoseSpeedMult());
+        }
+
+        private float GetThrowPoseSpeedMult()
+        {
+            return GetAttackPoseSpeedMult() * ThrowPoseSnapSpeedMult;
+        }
+
+        private void BeginReleaseHitStop()
+        {
+            _releaseHitStopTimer = ReleaseHitStopDuration;
+            _boss.SetArmLocked(true);
+        }
+
+        private void TickReleaseHitStop()
+        {
+            _releaseHitStopTimer = Mathf.Max(0f, _releaseHitStopTimer - Time.deltaTime);
+
+            if (_releaseHitStopTimer <= 0f)
+            {
+                _boss.SetArmLocked(false);
+            }
         }
 
         private int GetProjectileCount()

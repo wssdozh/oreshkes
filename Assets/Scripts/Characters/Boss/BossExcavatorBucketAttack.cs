@@ -10,6 +10,11 @@ namespace JunkyardBoss
         private const int HitBufferCount = 20;
         private const int GroundHitBufferCount = 8;
         private const string ScrapTrailSpawnerKey = "BossScrapTrailBlock";
+        private const float StrikePoseSnapSpeedMult = 1.65f;
+        private const float StrikeImpactDelayFactor = 0.35f;
+        private const float MinStrikeImpactDelay = 0.04f;
+        private const float MaxStrikeImpactDelay = 0.11f;
+        private const float HitStopDuration = 0.05f;
 
         private readonly BossExcavator _boss;
         private readonly BossExcavatorConfig _config;
@@ -22,6 +27,7 @@ namespace JunkyardBoss
         private float _strikeTimer;
         private float _recoverTimer;
         private float _hitDelayTimer;
+        private float _hitStopTimer;
         private Vector3 _strikeForward;
         private bool _isRunning;
         private bool _isHitApplied;
@@ -56,6 +62,7 @@ namespace JunkyardBoss
             _strikeTimer = 0f;
             _recoverTimer = 0f;
             _hitDelayTimer = 0f;
+            _hitStopTimer = 0f;
             _isRunning = false;
             _isHitApplied = false;
             _strikeForward = Vector3.forward;
@@ -70,6 +77,7 @@ namespace JunkyardBoss
             _strikeTimer = 0f;
             _recoverTimer = GetRecoverTime();
             _hitDelayTimer = 0f;
+            _hitStopTimer = 0f;
             _isRunning = true;
             _isHitApplied = false;
             _strikeForward = ResolveStrikeForward();
@@ -85,6 +93,13 @@ namespace JunkyardBoss
             if (_isRunning == false)
             {
                 return false;
+            }
+
+            if (_hitStopTimer > 0f)
+            {
+                TickHitStop();
+
+                return true;
             }
 
             if (_telegraphTimer > 0f)
@@ -150,7 +165,9 @@ namespace JunkyardBoss
             _strikeTimer = 0f;
             _recoverTimer = 0f;
             _hitDelayTimer = 0f;
+            _hitStopTimer = 0f;
             _boss.SetAimLocked(false);
+            _boss.SetArmLocked(false);
             _damagedHealthIds.Clear();
 
             if (restoreNeutralPose)
@@ -165,12 +182,13 @@ namespace JunkyardBoss
             _strikeForward = ResolveStrikeForward();
             float strikePoseTravelTime = GetStrikePoseTravelTime();
             _strikeTimer = Mathf.Max(GetBucketStrikeTime(), strikePoseTravelTime);
-            _hitDelayTimer = strikePoseTravelTime;
+            _hitDelayTimer = Mathf.Clamp(strikePoseTravelTime * StrikeImpactDelayFactor, MinStrikeImpactDelay, MaxStrikeImpactDelay);
             SetStrikePose();
         }
 
         private void BeginRecover()
         {
+            _boss.SetArmLocked(false);
             SetRecoverPose();
         }
 
@@ -178,6 +196,7 @@ namespace JunkyardBoss
         {
             _isRunning = false;
             _boss.SetAimLocked(false);
+            _boss.SetArmLocked(false);
         }
 
         private void SetTelegraphPose()
@@ -195,7 +214,7 @@ namespace JunkyardBoss
                 _config.ArmBucketStrikeBoomEuler,
                 _config.ArmBucketStrikeStickEuler,
                 _config.ArmBucketStrikeBucketEuler,
-                _config.BucketStrikeSpeedMult * GetPhaseAttackSpeedMult());
+                _config.BucketStrikeSpeedMult * StrikePoseSnapSpeedMult * GetPhaseAttackSpeedMult());
         }
 
         private void SetRecoverPose()
@@ -215,6 +234,7 @@ namespace JunkyardBoss
             }
 
             _isHitApplied = true;
+            BeginHitStop();
             _damagedHealthIds.Clear();
 
             Transform bucket = _boss.Bucket;
@@ -300,6 +320,22 @@ namespace JunkyardBoss
             nearestHealth.Decrease(_config.BucketHitDamage * GetPhaseDamageMult());
             ApplyShockwave(hitCenter);
             TrySpawnPhaseTwoMegaTrench(bucket.position, strikeForward);
+        }
+
+        private void BeginHitStop()
+        {
+            _hitStopTimer = HitStopDuration;
+            _boss.SetArmLocked(true);
+        }
+
+        private void TickHitStop()
+        {
+            _hitStopTimer = Mathf.Max(0f, _hitStopTimer - Time.deltaTime);
+
+            if (_hitStopTimer <= 0f)
+            {
+                _boss.SetArmLocked(false);
+            }
         }
 
         private bool IsInsideHitSector(Vector3 hitCenter, Vector3 strikeForward, Vector3 targetPoint)

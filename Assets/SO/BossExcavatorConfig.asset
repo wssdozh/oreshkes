@@ -157,6 +157,9 @@ MonoBehaviour:
   _armTrailScrapeBoomEuler: {x: 0, y: 0, z: 18}
   _armTrailScrapeStickEuler: {x: 0, y: 0, z: 36}
   _armTrailScrapeBucketEuler: {x: 0, y: 0, z: -42}
+  _armChargeBraceBoomEuler: {x: 0, y: 0, z: -38}
+  _armChargeBraceStickEuler: {x: 0, y: 0, z: 102}
+  _armChargeBraceBucketEuler: {x: 0, y: 0, z: -34}
   _armBoomAxis: 0
   _armStickAxis: 0
   _armBucketAxis: 0

@@ -14,10 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RoomNoiseProfile
   _seed: 56
   _offset: {x: 0, y: 0}
-  _frequency: 0.05
-  _fractalOctaves: 8
-  _fractalGain: 0.21
-  _fractalLacunarity: 2.4
+  _frequency: 0.09
+  _fractalOctaves: 5
+  _fractalGain: 0
+  _fractalLacunarity: 3.04
   _domainWarpEnabled: 1
   _domainWarpAmplitude: 6
   _domainWarpFrequency: 0.03
