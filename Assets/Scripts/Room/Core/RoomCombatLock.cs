@@ -504,7 +504,7 @@ public sealed class RoomCombatLock : MonoBehaviour
 
     private void ShowClearView()
     {
-        Player player = FindFirstObjectByType<Player>();
+        Player player = Player.Instance;
 
         if (player != null)
         {

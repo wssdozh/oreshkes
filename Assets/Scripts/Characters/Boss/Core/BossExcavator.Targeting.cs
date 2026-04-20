@@ -26,7 +26,7 @@ namespace JunkyardBoss
                 return true;
             }
 
-            Player player = FindFirstObjectByType<Player>();
+            Player player = Player.Instance;
 
             if (player == null)
             {

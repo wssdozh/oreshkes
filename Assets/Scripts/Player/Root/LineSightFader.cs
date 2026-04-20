@@ -16,9 +16,11 @@ public class LineSightFader : MonoBehaviour
     private HashSet<IFadable> _previous = new HashSet<IFadable>(32);
     private RaycastHit[] _hitBuffer = new RaycastHit[64];
     private Coroutine _checkRoutine;
+    private WaitForSeconds _checkWait;
 
     private void OnEnable()
     {
+        _checkWait = CreateCheckWait();
         _checkRoutine = StartCoroutine(CheckRoutine());
     }
 
@@ -33,13 +35,11 @@ public class LineSightFader : MonoBehaviour
 
     private IEnumerator CheckRoutine()
     {
-        WaitForSeconds waitForSeconds = new WaitForSeconds(_checkInterval);
-
         while (enabled)
         {
             UpdateVisibility();
 
-            yield return waitForSeconds;
+            yield return _checkWait;
         }
     }
 
@@ -115,5 +115,10 @@ public class LineSightFader : MonoBehaviour
         HashSet<IFadable> temporarySet = _previous;
         _previous = _current;
         _current = temporarySet;
+    }
+
+    private WaitForSeconds CreateCheckWait()
+    {
+        return new WaitForSeconds(_checkInterval);
     }
 }
