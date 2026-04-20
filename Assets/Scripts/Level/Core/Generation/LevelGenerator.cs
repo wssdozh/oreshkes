@@ -8,6 +8,7 @@ public sealed class LevelGenerator : MonoBehaviour
 {
     private const string FloorRootName = "FloorBlockRoot";
     private const float BossRoomEntryOffset = 2f;
+    private const float DefaultFixedDeltaTime = 0.02f;
 
     [Header("Roots")]
     [SerializeField] private Transform _roomsRoot;
@@ -30,11 +31,13 @@ public sealed class LevelGenerator : MonoBehaviour
     [SerializeField, Min(0)] private int _seedMin = 0;
     [SerializeField, Min(0)] private int _seedMax = int.MaxValue;
     [SerializeField] private bool _removeLegacyEnvironment = true;
+    [SerializeField] private bool _pauseGameplayDuringRuntimeGeneration = true;
 
     [Header("Runtime Batching")]
     [SerializeField, Min(1)] private int _runtimeShellsPerFrame = 2;
     [SerializeField, Min(1)] private int _runtimeCorridorsPerFrame = 2;
     [SerializeField, Min(1)] private int _runtimeInteriorsPerFrame = 1;
+    [SerializeField, Min(0f)] private float _runtimeBatchPauseSeconds = 0.02f;
 
     [Header("Room Runtime")]
     [SerializeField] private bool _streamRooms = true;
@@ -84,8 +87,11 @@ public sealed class LevelGenerator : MonoBehaviour
     private readonly LevelCorridorExecutor _corridorExecutor = new LevelCorridorExecutor();
     private readonly LevelRoomFinalizer _roomFinalizer = new LevelRoomFinalizer();
     private Coroutine _generationCoroutine;
+    private TimeScale _runtimeTimeScale;
+    private WaitForSecondsRealtime _runtimeBatchPauseWait;
     private bool _isGenerating;
     private bool _generationStepSucceeded;
+    private bool _isRuntimeGameplayPaused;
 
     public bool HasGeneratedLevel => _generationContext.PlacedRooms.Count > 0;
     public bool IsGenerating => _isGenerating;
@@ -94,6 +100,9 @@ public sealed class LevelGenerator : MonoBehaviour
 
     private void Awake()
     {
+        _runtimeTimeScale = new TimeScale(GetBaseFixedDeltaTime(), 0f);
+        RebuildRuntimeBatchPauseWait();
+
         if (_generateOnAwake == false)
         {
             return;
@@ -113,6 +122,7 @@ public sealed class LevelGenerator : MonoBehaviour
     private void OnDisable()
     {
         StopRuntimeGeneration();
+        _runtimeTimeScale.ResetToDefault();
     }
 
     public void StartRuntimeGeneration()
@@ -122,6 +132,7 @@ public sealed class LevelGenerator : MonoBehaviour
             return;
         }
 
+        RebuildRuntimeBatchPauseWait();
         _generationCoroutine = StartCoroutine(GenerateRuntimeRoutine());
     }
 
@@ -241,35 +252,44 @@ public sealed class LevelGenerator : MonoBehaviour
     private IEnumerator GenerateRuntimeRoutine()
     {
         _isGenerating = true;
-        CleanupLegacyEnvironment();
-
-        yield return null;
-
-        int attempts = Mathf.Clamp(_runtimeAttempts, 1, 64);
-
-        for (int attemptIndex = 0; attemptIndex < attempts; attemptIndex++)
+        PauseGameplayForRuntimeGeneration();
+        
+        try
         {
-            if (_randomSeedOnAwake == true)
+            CleanupLegacyEnvironment();
+
+            yield return YieldRuntimePause();
+
+            int attempts = Mathf.Clamp(_runtimeAttempts, 1, 64);
+
+            for (int attemptIndex = 0; attemptIndex < attempts; attemptIndex++)
             {
-                _levelSeed = GetRandomSeed();
+                if (_randomSeedOnAwake == true)
+                {
+                    _levelSeed = GetRandomSeed();
+                }
+
+                yield return GenerateRoutine();
+
+                if (_roomsRoot.childCount > 0)
+                {
+                    _generationCoroutine = null;
+                    _isGenerating = false;
+
+                    yield break;
+                }
+
+                yield return YieldRuntimePause();
             }
 
-            yield return GenerateRoutine();
-
-            if (_roomsRoot.childCount > 0)
-            {
-                _generationCoroutine = null;
-                _isGenerating = false;
-
-                yield break;
-            }
-
-            yield return null;
+            _generationCoroutine = null;
+            _isGenerating = false;
+            throw new InvalidOperationException(nameof(_levelSeed));
         }
-
-        _generationCoroutine = null;
-        _isGenerating = false;
-        throw new InvalidOperationException(nameof(_levelSeed));
+        finally
+        {
+            ResumeGameplayAfterRuntimeGeneration();
+        }
     }
 
     private IEnumerator GenerateRoutine()
@@ -282,51 +302,51 @@ public sealed class LevelGenerator : MonoBehaviour
         {
             Clear();
 
-            yield return null;
+            yield return YieldRuntimePause();
 
             int attemptSeed = _levelSeed + (attemptIndex * 10007);
             System.Random random = new System.Random(attemptSeed);
             LevelTreasureRatio treasureRatio = new LevelTreasureRatio(_treasurePerCombatNumerator, _treasurePerCombatDenominator);
             LevelNode root = _planBuilder.BuildPlan(_generationContext, random, _levelSequenceProfile, treasureRatio);
 
-            yield return null;
+            yield return YieldRuntimePause();
 
             yield return InstantiateRoomShellsRoutine(random);
 
             if (_generationStepSucceeded == false)
             {
-                yield return null;
+                yield return YieldRuntimePause();
 
                 continue;
             }
 
-            yield return null;
+            yield return YieldRuntimePause();
 
             LevelPlacementSettings placementSettings = CreatePlacementSettings();
 
             if (_roomPlacer.PlaceAllRooms(_generationContext, root, random, _corridorBuilder, placementSettings) == false)
             {
-                yield return null;
+                yield return YieldRuntimePause();
 
                 continue;
             }
 
-            yield return null;
+            yield return YieldRuntimePause();
 
             yield return BuildCorridorsRoutine();
 
             if (_generationStepSucceeded == false)
             {
-                yield return null;
+                yield return YieldRuntimePause();
 
                 continue;
             }
 
-            yield return null;
+            yield return YieldRuntimePause();
 
             yield return FinalizeInteriorsRoutine();
 
-            yield return null;
+            yield return YieldRuntimePause();
 
             if (Application.isPlaying == true)
             {
@@ -334,7 +354,7 @@ public sealed class LevelGenerator : MonoBehaviour
                 ConfigureRoomStreaming();
             }
 
-            yield return null;
+            yield return YieldRuntimePause();
 
             BuildRuntimeNavMesh();
 
@@ -373,7 +393,7 @@ public sealed class LevelGenerator : MonoBehaviour
             if (processedCount >= roomsPerFrame)
             {
                 processedCount = 0;
-                yield return null;
+                yield return YieldRuntimePause();
             }
         }
     }
@@ -399,7 +419,7 @@ public sealed class LevelGenerator : MonoBehaviour
             if (processedCount >= corridorsPerFrame)
             {
                 processedCount = 0;
-                yield return null;
+                yield return YieldRuntimePause();
             }
         }
     }
@@ -417,9 +437,19 @@ public sealed class LevelGenerator : MonoBehaviour
             if (processedCount >= roomsPerFrame)
             {
                 processedCount = 0;
-                yield return null;
+                yield return YieldRuntimePause();
             }
         }
+    }
+
+    private object YieldRuntimePause()
+    {
+        if (_runtimeBatchPauseWait != null)
+        {
+            return _runtimeBatchPauseWait;
+        }
+
+        return null;
     }
 
     private void StopRuntimeGeneration()
@@ -431,6 +461,7 @@ public sealed class LevelGenerator : MonoBehaviour
         }
 
         _isGenerating = false;
+        ResumeGameplayAfterRuntimeGeneration();
     }
 
     private void ValidateGenerationDependencies()
@@ -459,6 +490,55 @@ public sealed class LevelGenerator : MonoBehaviour
         {
             throw new InvalidOperationException(nameof(_corridorBuilder));
         }
+    }
+
+    private void RebuildRuntimeBatchPauseWait()
+    {
+        if (_runtimeBatchPauseSeconds <= 0f)
+        {
+            _runtimeBatchPauseWait = null;
+
+            return;
+        }
+
+        _runtimeBatchPauseWait = new WaitForSecondsRealtime(_runtimeBatchPauseSeconds);
+    }
+
+    private void PauseGameplayForRuntimeGeneration()
+    {
+        if (_pauseGameplayDuringRuntimeGeneration == false)
+        {
+            return;
+        }
+
+        if (_isRuntimeGameplayPaused)
+        {
+            return;
+        }
+
+        _runtimeTimeScale.Animate(0f, 0f, AnimationCurve.Linear(0f, 0f, 1f, 1f), true);
+        _isRuntimeGameplayPaused = true;
+    }
+
+    private void ResumeGameplayAfterRuntimeGeneration()
+    {
+        if (_isRuntimeGameplayPaused == false)
+        {
+            return;
+        }
+
+        _runtimeTimeScale.ResetToDefault();
+        _isRuntimeGameplayPaused = false;
+    }
+
+    private float GetBaseFixedDeltaTime()
+    {
+        if (Time.fixedDeltaTime > 0f)
+        {
+            return Time.fixedDeltaTime;
+        }
+
+        return DefaultFixedDeltaTime;
     }
 
     private LevelPlacementSettings CreatePlacementSettings()
