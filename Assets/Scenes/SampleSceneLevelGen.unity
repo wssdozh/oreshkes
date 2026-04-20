@@ -388,13 +388,46 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 7047302500855502851, guid: 5fd958ada64e98c4091cf0cdb864a35b, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 402519382}
   m_SourcePrefab: {fileID: 100100000, guid: 5fd958ada64e98c4091cf0cdb864a35b, type: 3}
 --- !u!224 &40251937 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 7062555480392638762, guid: 5fd958ada64e98c4091cf0cdb864a35b, type: 3}
   m_PrefabInstance: {fileID: 40251936}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &402519380 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7047302500855502851, guid: 5fd958ada64e98c4091cf0cdb864a35b, type: 3}
+  m_PrefabInstance: {fileID: 40251936}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &402519381 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7055179668353214231, guid: 5fd958ada64e98c4091cf0cdb864a35b, type: 3}
+  m_PrefabInstance: {fileID: 40251936}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 402519380}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button
+--- !u!114 &402519382
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 402519380}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 260f560bfd6dbf0458ce3bff27819097, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ExitButton
+  _button: {fileID: 402519381}
+  _sceneName: MainMenuScene
 --- !u!1001 &57851917
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -7525,7 +7558,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ExitButton
   _button: {fileID: 1254428324}
-  _sceneName:
+  _sceneName: MainMenuScene
 --- !u!1 &1263907315
 GameObject:
   m_ObjectHideFlags: 0

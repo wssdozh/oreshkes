@@ -1,19 +1,41 @@
+using UnityEngine.UI;
 using UnityEngine;
 using DG.Tweening;
 
 public sealed class BlurOverlay : MonoBehaviour
 {
     [SerializeField] private CanvasGroup _canvasGroup;
+    [SerializeField] private Image _image;
     [SerializeField] private float _showDurationSeconds = 0.45f;
     [SerializeField] private float _hideDurationSeconds = 0.30f;
     [SerializeField] private AnimationCurve _showEaseCurve = AnimationCurve.EaseInOut(0.0f, 0.0f, 1.0f, 1.0f);
     [SerializeField] private AnimationCurve _hideEaseCurve = AnimationCurve.EaseInOut(0.0f, 0.0f, 1.0f, 1.0f);
+    [SerializeField] private bool _overrideMaterialProperties;
+    [SerializeField] private float _iterations = 36.0f;
+    [SerializeField] private float _escapeRadius = 4.0f;
+    [SerializeField] private float _glow = 1.0f;
+    [SerializeField] private float _alpha = 1.0f;
+    [SerializeField] private float _scale = 2.7f;
+    [SerializeField] private float _pixelResolution = 200.0f;
 
     private Tween _tween;
+    private Material _runtimeMaterial;
 
     private void Awake()
     {
+        InitializeMaterial();
         SetState(0.0f);
+    }
+
+    private void OnDestroy()
+    {
+        if (_runtimeMaterial == null)
+        {
+            return;
+        }
+
+        Destroy(_runtimeMaterial);
+        _runtimeMaterial = null;
     }
 
     public void Show()
@@ -98,5 +120,60 @@ public sealed class BlurOverlay : MonoBehaviour
 
         _canvasGroup.blocksRaycasts = true;
         _canvasGroup.interactable = true;
+    }
+
+    private void InitializeMaterial()
+    {
+        if (_overrideMaterialProperties == false)
+        {
+            return;
+        }
+
+        if (_image == null)
+        {
+            return;
+        }
+
+        if (_image.material == null)
+        {
+            return;
+        }
+
+        _runtimeMaterial = new Material(_image.material);
+        ApplyMaterialOverrides(_runtimeMaterial);
+        _image.material = _runtimeMaterial;
+    }
+
+    private void ApplyMaterialOverrides(Material material)
+    {
+        if (material.HasProperty("_Iterations"))
+        {
+            material.SetFloat("_Iterations", _iterations);
+        }
+
+        if (material.HasProperty("_EscapeRadius"))
+        {
+            material.SetFloat("_EscapeRadius", _escapeRadius);
+        }
+
+        if (material.HasProperty("_Glow"))
+        {
+            material.SetFloat("_Glow", _glow);
+        }
+
+        if (material.HasProperty("_Alpha"))
+        {
+            material.SetFloat("_Alpha", _alpha);
+        }
+
+        if (material.HasProperty("_Scale"))
+        {
+            material.SetFloat("_Scale", _scale);
+        }
+
+        if (material.HasProperty("_PixelResolution"))
+        {
+            material.SetFloat("_PixelResolution", _pixelResolution);
+        }
     }
 }
