@@ -259,12 +259,12 @@ public sealed class BossHealthOverlay : MonoBehaviour
 
     private void TryBindBoss()
     {
-        BossExcavator[] bosses = FindObjectsByType<BossExcavator>(FindObjectsSortMode.None);
+        System.Collections.Generic.IReadOnlyList<BossExcavator> bosses = BossExcavator.Instances;
         BossExcavator fallbackBoss = null;
         RoomCombatLock fallbackRoomCombatLock = null;
         int bossIndex = 0;
 
-        while (bossIndex < bosses.Length)
+        while (bossIndex < bosses.Count)
         {
             BossExcavator boss = bosses[bossIndex];
             bossIndex += 1;

@@ -154,7 +154,7 @@ public sealed class LevelRoomStreamer : MonoBehaviour
             return _playerTrack;
         }
 
-        Player playerComponent = FindFirstObjectByType<Player>();
+        Player playerComponent = Player.Instance;
 
         if (playerComponent != null)
         {

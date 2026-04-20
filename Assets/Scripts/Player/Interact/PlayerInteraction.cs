@@ -15,9 +15,11 @@ public class PlayerInteraction : MonoBehaviour
     [SerializeField] private float _hoverTickSeconds = 0.15f;
 
     private Coroutine _hoverCoroutine;
+    private WaitForSeconds _hoverWait;
 
     private void OnEnable()
     {
+        _hoverWait = CreateHoverWait();
         _hoverCoroutine = StartCoroutine(HoverTickRoutine());
     }
 
@@ -71,13 +73,16 @@ public class PlayerInteraction : MonoBehaviour
 
     private IEnumerator HoverTickRoutine()
     {
-        WaitForSeconds waitForSeconds = new WaitForSeconds(_hoverTickSeconds);
-
         while (enabled)
         {
             _interactor.TickHover();
 
-            yield return waitForSeconds;
+            yield return _hoverWait;
         }
+    }
+
+    private WaitForSeconds CreateHoverWait()
+    {
+        return new WaitForSeconds(_hoverTickSeconds);
     }
 }

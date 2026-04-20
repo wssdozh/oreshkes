@@ -5,6 +5,8 @@ namespace JunkyardBoss
 {
     public sealed partial class BossExcavator : MonoBehaviour
     {
+        private static readonly System.Collections.Generic.List<BossExcavator> s_instances = new System.Collections.Generic.List<BossExcavator>(8);
+
         [SerializeField] private BossExcavatorConfig _config;
         [SerializeField] private BossExcavatorMove _move;
         [SerializeField] private BossExcavatorAim _aim;
@@ -47,6 +49,7 @@ namespace JunkyardBoss
         public BossExcavatorAttack CurrentAttack => _brain.CurrentAttack;
         public BossExcavatorAttack TargetAttack => _brain.TargetAttack;
         public bool IsDead => CurrentHealth <= _health.MinValue;
+        public static System.Collections.Generic.IReadOnlyList<BossExcavator> Instances => s_instances;
 
         private void Awake()
         {
@@ -71,11 +74,17 @@ namespace JunkyardBoss
 
         private void OnEnable()
         {
+            if (s_instances.Contains(this) == false)
+            {
+                s_instances.Add(this);
+            }
+
             _health.Ended += OnHealthEnded;
         }
 
         private void OnDisable()
         {
+            s_instances.Remove(this);
             _health.Ended -= OnHealthEnded;
         }
 

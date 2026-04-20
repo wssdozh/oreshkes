@@ -20,11 +20,14 @@ public class Player : MonoBehaviour
     private BossHealthOverlay _bossHealthOverlay;
     private RemainingEnemyOverlay _remainingEnemyOverlay;
 
+    public static Player Instance { get; private set; }
     public event Action Died;
     public PlayerMovement Movement => _movement;
 
     private void Awake()
     {
+        Instance = this;
+
         if (_health == null)
         {
             throw new InvalidOperationException(nameof(_health));
@@ -62,6 +65,11 @@ public class Player : MonoBehaviour
 
     private void OnDestroy()
     {
+        if (ReferenceEquals(Instance, this))
+        {
+            Instance = null;
+        }
+
         if (_inputs == null)
         {
             return;

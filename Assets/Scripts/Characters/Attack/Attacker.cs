@@ -19,6 +19,8 @@ public class Attacker : MonoBehaviour
     private readonly Collider[] _targetBuffer = new Collider[TargetBufferSize];
     private readonly int[] _processedIdBuffer = new int[TargetBufferSize];
     private Player _player;
+    private WaitForSeconds _cooldownWait;
+    private float _cachedCooldownSeconds = -1f;
 
     public AttackData AttackData => _attackData;
 
@@ -241,7 +243,7 @@ public class Attacker : MonoBehaviour
     {
         _isOnCooldown = true;
 
-        yield return new WaitForSeconds(_attackData.AttackCooldown);
+        yield return GetCooldownWait();
 
         _isOnCooldown = false;
     }
@@ -419,5 +421,18 @@ public class Attacker : MonoBehaviour
         }
 
         return damage;
+    }
+
+    private WaitForSeconds GetCooldownWait()
+    {
+        float cooldownSeconds = _attackData.AttackCooldown;
+
+        if (_cooldownWait == null || Mathf.Abs(_cachedCooldownSeconds - cooldownSeconds) > 0.0001f)
+        {
+            _cachedCooldownSeconds = cooldownSeconds;
+            _cooldownWait = new WaitForSeconds(cooldownSeconds);
+        }
+
+        return _cooldownWait;
     }
 }
