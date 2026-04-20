@@ -223,6 +223,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BlurOverlay
   _canvasGroup: {fileID: 100105}
+  _image: {fileID: 100103}
   _showDurationSeconds: 0.45
   _hideDurationSeconds: 0.3
   _showEaseCurve:
@@ -249,6 +250,13 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+  _overrideMaterialProperties: 1
+  _iterations: 80
+  _escapeRadius: 10
+  _glow: 2.4
+  _alpha: 1
+  _scale: 6.5
+  _pixelResolution: 48
   _hideEaseCurve:
     serializedVersion: 2
     m_Curve:
