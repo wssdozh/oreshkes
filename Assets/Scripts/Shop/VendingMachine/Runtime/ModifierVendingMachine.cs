@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.AI;
 
 public sealed class ModifierVendingMachine : Interactable
 {
@@ -21,6 +22,8 @@ public sealed class ModifierVendingMachine : Interactable
     private ModifierOffer[] _rolledOffers;
     private bool _hasRolled;
     private bool _isPurchased;
+    private BoxCollider _navObstacleCollider;
+    private NavMeshObstacle _navMeshObstacle;
 
     public event Action<ModifierVendingMachine, GameObject> InteractionRequested;
 
@@ -52,6 +55,22 @@ public sealed class ModifierVendingMachine : Interactable
         }
 
         _rolledOffers = new ModifierOffer[_cardCount];
+        EnsureNavMeshObstacle();
+    }
+
+    private void OnEnable()
+    {
+        ApplyNavMeshObstacle();
+    }
+
+    private void OnDisable()
+    {
+        if (_navMeshObstacle == null)
+        {
+            return;
+        }
+
+        _navMeshObstacle.enabled = false;
     }
 
     public ModifierOffer GetOffer(int index)
@@ -114,7 +133,49 @@ public sealed class ModifierVendingMachine : Interactable
             }
         }
 
+        if (_navMeshObstacle != null)
+        {
+            _navMeshObstacle.enabled = false;
+        }
+
         enabled = false;
+    }
+
+    private void EnsureNavMeshObstacle()
+    {
+        _navObstacleCollider = GetComponent<BoxCollider>();
+
+        if (_navObstacleCollider == null)
+        {
+            return;
+        }
+
+        _navMeshObstacle = GetComponent<NavMeshObstacle>();
+
+        if (_navMeshObstacle == null)
+        {
+            _navMeshObstacle = gameObject.AddComponent<NavMeshObstacle>();
+        }
+    }
+
+    private void ApplyNavMeshObstacle()
+    {
+        if (_navObstacleCollider == null)
+        {
+            return;
+        }
+
+        if (_navMeshObstacle == null)
+        {
+            return;
+        }
+
+        _navMeshObstacle.shape = NavMeshObstacleShape.Box;
+        _navMeshObstacle.center = _navObstacleCollider.center;
+        _navMeshObstacle.size = _navObstacleCollider.size;
+        _navMeshObstacle.carving = true;
+        _navMeshObstacle.carveOnlyStationary = true;
+        _navMeshObstacle.enabled = _navObstacleCollider.enabled;
     }
 
     private void RollOffersOnce(GameObject buyer)

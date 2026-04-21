@@ -472,6 +472,68 @@ public sealed partial class EnemySteering
         return hitCollider.bounds.ClosestPoint(point);
     }
 
+    private bool CanUseProbeObstacle(Collider hitCollider)
+    {
+        if (hitCollider == null)
+        {
+            return false;
+        }
+
+        if (hitCollider.transform.IsChildOf(_root))
+        {
+            return false;
+        }
+
+        if (IsEnemyCollider(hitCollider))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    private bool CanUseStaticObstacle(Collider hitCollider)
+    {
+        if (CanUseProbeObstacle(hitCollider) == false)
+        {
+            return false;
+        }
+
+        if (IsDynamicObstacleCollider(hitCollider))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    private bool IsDynamicObstacleCollider(Collider hitCollider)
+    {
+        if (hitCollider == null)
+        {
+            return false;
+        }
+
+        Rigidbody obstacleRigidbody = hitCollider.attachedRigidbody;
+
+        if (obstacleRigidbody == null)
+        {
+            return false;
+        }
+
+        if (obstacleRigidbody == _rigidbody)
+        {
+            return false;
+        }
+
+        if (obstacleRigidbody.isKinematic)
+        {
+            return false;
+        }
+
+        return true;
+    }
+
     private float GetFlatDistanceSqr(Vector3 firstPoint, Vector3 secondPoint)
     {
         firstPoint.y = _root.position.y;

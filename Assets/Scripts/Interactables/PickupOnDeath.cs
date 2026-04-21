@@ -1,6 +1,7 @@
 using System.Collections;
 using System;
 using UnityEngine;
+using UnityEngine.AI;
 
 public sealed class PickupOnDeath : MonoBehaviour
 {
@@ -19,6 +20,9 @@ public sealed class PickupOnDeath : MonoBehaviour
     private Spawner<BasePickup> _pickupSpawner;
     private bool _isDropped;
     private Coroutine _sinkCoroutine;
+    private BoxCollider _navObstacleCollider;
+    private NavMeshObstacle _navMeshObstacle;
+    private Rigidbody _navObstacleRigidbody;
 
     private void Awake()
     {
@@ -51,6 +55,8 @@ public sealed class PickupOnDeath : MonoBehaviour
         {
             throw new InvalidOperationException(nameof(_sinkDistanceMultiplier));
         }
+
+        EnsureNavMeshObstacle();
     }
 
     private void Start()
@@ -61,11 +67,17 @@ public sealed class PickupOnDeath : MonoBehaviour
     private void OnEnable()
     {
         _health.Ended += OnHealthEnded;
+        ApplyNavMeshObstacle();
     }
 
     private void OnDisable()
     {
         _health.Ended -= OnHealthEnded;
+
+        if (_navMeshObstacle != null)
+        {
+            _navMeshObstacle.enabled = false;
+        }
 
         if (_sinkCoroutine != null)
         {
@@ -84,6 +96,7 @@ public sealed class PickupOnDeath : MonoBehaviour
         _isDropped = true;
         DisableColliders();
         DisableRigidbodies();
+        DisableNavMeshObstacle();
         SpawnPickup();
         RequestNavMeshUpdate();
 
@@ -261,5 +274,85 @@ public sealed class PickupOnDeath : MonoBehaviour
         }
 
         return hasBounds;
+    }
+
+    private void EnsureNavMeshObstacle()
+    {
+        _navObstacleCollider = _intactObject.GetComponent<BoxCollider>();
+        _navObstacleRigidbody = _intactObject.GetComponent<Rigidbody>();
+
+        if (_navObstacleCollider == null)
+        {
+            return;
+        }
+
+        _navMeshObstacle = _intactObject.GetComponent<NavMeshObstacle>();
+
+        if (IsDynamicObstacle())
+        {
+            if (_navMeshObstacle != null)
+            {
+                _navMeshObstacle.enabled = false;
+            }
+
+            return;
+        }
+
+        if (_navMeshObstacle == null)
+        {
+            _navMeshObstacle = _intactObject.AddComponent<NavMeshObstacle>();
+        }
+    }
+
+    private void ApplyNavMeshObstacle()
+    {
+        if (_navObstacleCollider == null)
+        {
+            return;
+        }
+
+        if (_navMeshObstacle == null)
+        {
+            return;
+        }
+
+        if (IsDynamicObstacle())
+        {
+            _navMeshObstacle.enabled = false;
+
+            return;
+        }
+
+        _navMeshObstacle.shape = NavMeshObstacleShape.Box;
+        _navMeshObstacle.center = _navObstacleCollider.center;
+        _navMeshObstacle.size = _navObstacleCollider.size;
+        _navMeshObstacle.carving = true;
+        _navMeshObstacle.carveOnlyStationary = true;
+        _navMeshObstacle.enabled = _navObstacleCollider.enabled;
+    }
+
+    private void DisableNavMeshObstacle()
+    {
+        if (_navMeshObstacle == null)
+        {
+            return;
+        }
+
+        _navMeshObstacle.enabled = false;
+    }
+
+    private bool IsDynamicObstacle()
+    {
+        if (_navObstacleRigidbody == null)
+        {
+            return false;
+        }
+
+        if (_navObstacleRigidbody.isKinematic)
+        {
+            return false;
+        }
+
+        return true;
     }
 }
