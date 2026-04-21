@@ -304,18 +304,12 @@ public sealed partial class EnemySteering
             RaycastHit hit = _probeBuffer[hitIndex];
             Collider hitCollider = hit.collider;
 
-            if (hitCollider != null)
+            if (CanUseProbeObstacle(hitCollider))
             {
-                if (hitCollider.transform.IsChildOf(_root) == false)
+                if (hit.distance < nearestDistance)
                 {
-                    if (IsEnemyCollider(hitCollider) == false)
-                    {
-                        if (hit.distance < nearestDistance)
-                        {
-                            nearestDistance = hit.distance;
-                            nearestNormal = hit.normal;
-                        }
-                    }
+                    nearestDistance = hit.distance;
+                    nearestNormal = hit.normal;
                 }
             }
 
@@ -343,27 +337,21 @@ public sealed partial class EnemySteering
         {
             Collider hitCollider = _pointBuffer[hitIndex];
 
-            if (hitCollider != null)
+            if (CanUseProbeObstacle(hitCollider))
             {
-                if (hitCollider.transform.IsChildOf(_root) == false)
+                Vector3 obstaclePoint = GetClosestPoint(hitCollider, overlapPoint);
+                Vector3 overlapNormal = overlapPoint - obstaclePoint;
+                overlapNormal = GetFlatDirection(overlapNormal);
+
+                if (overlapNormal.sqrMagnitude <= MinDistance)
                 {
-                    if (IsEnemyCollider(hitCollider) == false)
-                    {
-                        Vector3 obstaclePoint = GetClosestPoint(hitCollider, overlapPoint);
-                        Vector3 overlapNormal = overlapPoint - obstaclePoint;
-                        overlapNormal = GetFlatDirection(overlapNormal);
-
-                        if (overlapNormal.sqrMagnitude <= MinDistance)
-                        {
-                            overlapNormal = -probeDirection;
-                        }
-
-                        nearestDistance = 0f;
-                        nearestNormal = overlapNormal;
-
-                        return;
-                    }
+                    overlapNormal = -probeDirection;
                 }
+
+                nearestDistance = 0f;
+                nearestNormal = overlapNormal;
+
+                return;
             }
 
             hitIndex += 1;
@@ -410,12 +398,9 @@ public sealed partial class EnemySteering
         {
             Collider hitCollider = _pointBuffer[hitIndex];
 
-            if (hitCollider != null)
+            if (CanUseStaticObstacle(hitCollider))
             {
-                if (hitCollider.transform.IsChildOf(_root) == false && IsEnemyCollider(hitCollider) == false)
-                {
-                    return true;
-                }
+                return true;
             }
 
             hitIndex += 1;
@@ -466,35 +451,32 @@ public sealed partial class EnemySteering
                 {
                     Collider hitCollider = _pointBuffer[hitIndex];
 
-                    if (hitCollider != null)
+                    if (CanUseStaticObstacle(hitCollider))
                     {
-                        if (hitCollider.transform.IsChildOf(_root) == false && hitCollider.isTrigger == false)
+                        if (hitCollider.isTrigger == false)
                         {
-                            if (IsEnemyCollider(hitCollider) == false)
+                            Vector3 overlapDirection;
+                            float overlapDistance;
+                            bool hasOverlap = Physics.ComputePenetration(
+                                bodyCollider,
+                                bodyCollider.transform.position,
+                                bodyCollider.transform.rotation,
+                                hitCollider,
+                                hitCollider.transform.position,
+                                hitCollider.transform.rotation,
+                                out overlapDirection,
+                                out overlapDistance);
+
+                            if (hasOverlap)
                             {
-                                Vector3 overlapDirection;
-                                float overlapDistance;
-                                bool hasOverlap = Physics.ComputePenetration(
-                                    bodyCollider,
-                                    bodyCollider.transform.position,
-                                    bodyCollider.transform.rotation,
-                                    hitCollider,
-                                    hitCollider.transform.position,
-                                    hitCollider.transform.rotation,
-                                    out overlapDirection,
-                                    out overlapDistance);
-
-                                if (hasOverlap)
+                                if (overlapDistance > 0f)
                                 {
-                                    if (overlapDistance > 0f)
-                                    {
-                                        overlapDirection.y = 0f;
+                                    overlapDirection.y = 0f;
 
-                                        if (overlapDirection.sqrMagnitude > MinDistance)
-                                        {
-                                            overlapDirection.Normalize();
-                                            pushDirection += overlapDirection * overlapDistance;
-                                        }
+                                    if (overlapDirection.sqrMagnitude > MinDistance)
+                                    {
+                                        overlapDirection.Normalize();
+                                        pushDirection += overlapDirection * overlapDistance;
                                     }
                                 }
                             }

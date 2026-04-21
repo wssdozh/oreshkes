@@ -171,18 +171,15 @@ public sealed partial class EnemySteering
         {
             Collider hitCollider = _pointBuffer[hitIndex];
 
-            if (hitCollider != null)
+            if (CanUseStaticObstacle(hitCollider))
             {
-                if (hitCollider.transform.IsChildOf(_root) == false && IsEnemyCollider(hitCollider) == false)
-                {
-                    Vector3 closestPoint = GetClosestPoint(hitCollider, origin);
-                    Vector3 offset = origin - closestPoint;
-                    offset.y = 0f;
+                Vector3 closestPoint = GetClosestPoint(hitCollider, origin);
+                Vector3 offset = origin - closestPoint;
+                offset.y = 0f;
 
-                    if (offset.magnitude < wallGap)
-                    {
-                        return false;
-                    }
+                if (offset.magnitude < wallGap)
+                {
+                    return false;
                 }
             }
 
@@ -256,27 +253,24 @@ public sealed partial class EnemySteering
         {
             Collider hitCollider = _pointBuffer[hitIndex];
 
-            if (hitCollider != null)
+            if (CanUseStaticObstacle(hitCollider))
             {
-                if (hitCollider.transform.IsChildOf(_root) == false && IsEnemyCollider(hitCollider) == false)
+                Vector3 obstaclePoint = GetClosestPoint(hitCollider, origin);
+                Vector3 pushDirection = origin - obstaclePoint;
+                pushDirection.y = 0f;
+                float obstacleDistance = pushDirection.magnitude;
+
+                if (obstacleDistance < wallGap)
                 {
-                    Vector3 obstaclePoint = GetClosestPoint(hitCollider, origin);
-                    Vector3 pushDirection = origin - obstaclePoint;
-                    pushDirection.y = 0f;
-                    float obstacleDistance = pushDirection.magnitude;
-
-                    if (obstacleDistance < wallGap)
+                    if (pushDirection.sqrMagnitude <= MinDistance)
                     {
-                        if (pushDirection.sqrMagnitude <= MinDistance)
-                        {
-                            pushDirection = GetFlatDirection(point - hitCollider.bounds.center);
-                        }
+                        pushDirection = GetFlatDirection(point - hitCollider.bounds.center);
+                    }
 
-                        if (pushDirection.sqrMagnitude > MinDistance)
-                        {
-                            float pushDistance = (wallGap - obstacleDistance) + SafePointPushGap;
-                            pushVector += pushDirection.normalized * pushDistance;
-                        }
+                    if (pushDirection.sqrMagnitude > MinDistance)
+                    {
+                        float pushDistance = (wallGap - obstacleDistance) + SafePointPushGap;
+                        pushVector += pushDirection.normalized * pushDistance;
                     }
                 }
             }
