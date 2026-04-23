@@ -93,8 +93,9 @@ MonoBehaviour:
   _fireRatePerSecond: 0.5
   _targetLayers:
     serializedVersion: 2
-    m_Bits: 449
+    m_Bits: 1473
   _maxAimAngleDegrees: 30
+  _readyAngleDegrees: 8
   _muzzle: {fileID: 7756557751483808876}
   _pelletPrefab: {fileID: 4344111331149057464, guid: 13bda12239d3d1d4a9c7ec696a064ee0, type: 3}
   _minPelletsPerShot: 5

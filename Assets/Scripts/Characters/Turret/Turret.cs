@@ -90,6 +90,11 @@ public class Turret : MonoBehaviour, IEnemyAlert
             throw new InvalidOperationException(nameof(_headCrash));
         }
 
+        if (_fireExecutor == null)
+            throw new InvalidOperationException(nameof(_fireExecutor));
+
+        _fireExecutor.SetIgnoredRoot(_health.transform);
+
         _bodyCollider = GetComponent<BoxCollider>();
 
         if (_bodyCollider == null)

@@ -412,7 +412,7 @@ MonoBehaviour:
   _fireRatePerSecond: 1.2
   _targetLayers:
     serializedVersion: 2
-    m_Bits: 449
+    m_Bits: 1473
   _maxAimAngleDegrees: 30
   _readyAngleDegrees: 8
   _muzzle: {fileID: 5363890313950826456}
