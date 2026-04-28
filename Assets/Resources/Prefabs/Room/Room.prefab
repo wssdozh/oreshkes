@@ -248,15 +248,27 @@ MonoBehaviour:
   _floorPrefabScaleMultiplier: {x: 1, y: 1, z: 1}
   _fencePostsRoot: {fileID: 500605067292396560}
   _fencePostPrefab: {fileID: 8519452763209203792, guid: 68a457e87213d194b95867fcfc048e9c, type: 3}
+  _postPlacement: 1
+  _fencePostVisualPrefab: {fileID: 0}
+  _fencePostVisualResourcePath: Prefabs/Room/Fences/FencePostVisual
+  _fencePostVisualHeightMultiplier: 0.75
+  _fencePostVisualThicknessMultiplier: 1
+  _fencePostVisualYawOffset: 0
   _fenceSegmentsRoot: {fileID: 6034161103198927398}
   _fenceSegmentPrefab: {fileID: 2152623805651872328, guid: d22b72efe69f17b45849fe7f12510ea9, type: 3}
+  _fenceSegmentVisualPrefabs: []
+  _fenceSegmentVisualResourcePaths:
+  - Prefabs/Room/Fences/FenceVisual
+  _hideFenceBlockRenderersWhenVisualsAssigned: 1
+  _fenceSegmentVisualHeightMultiplier: 0.75
+  _fenceSegmentVisualMaximumStretch: 1.35
+  _fenceSegmentVisualYawOffset: 180
   _doorMarkersRoot: {fileID: 9073623126965759547}
   _doorMarkerPrefab: {fileID: 8535360583959270923, guid: afcac13f1e9c1214bb8746fd3999cd55, type: 3}
   _blockSize: 1
   _ceilingEnabled: 0
-  _postsEnabled: 1
-  _totalPostCount: 20
-  _minimumPostDistanceInCells: 6
+  _totalPostCount: 27
+  _minimumPostDistanceInCells: 5
   _postHeightInBlocks: 7
   _segmentHeightInBlocks: 7
   _postPivotAtBase: 0

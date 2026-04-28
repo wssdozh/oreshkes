@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -5,11 +6,33 @@ public sealed class RoomShellBuilder : MonoBehaviour
 {
     private const float FenceFaceYawOffset = -90f;
     private const float FencePostFloorLiftInBlocks = 0.5f;
+    private const float MinVisualSize = 0.0001f;
+
+    private struct FenceVisualMetrics
+    {
+        public Bounds LocalBounds;
+        public bool LengthAlongX;
+        public float SourceLength;
+
+        public FenceVisualMetrics(Bounds localBounds)
+        {
+            LocalBounds = localBounds;
+            LengthAlongX = localBounds.size.x > localBounds.size.z;
+            SourceLength = LengthAlongX == true ? localBounds.size.x : localBounds.size.z;
+        }
+    }
 
     private enum FloorBuildMode
     {
         TiledBlocks,
         SinglePrefab
+    }
+
+    private enum FencePostPlacement
+    {
+        None,
+        CornersAndDoors,
+        EveryFenceSegment
     }
 
     [SerializeField] private Transform _floorBlocksRoot;
@@ -25,17 +48,27 @@ public sealed class RoomShellBuilder : MonoBehaviour
 
     [SerializeField] private Transform _fencePostsRoot;
     [SerializeField] private GameObject _fencePostPrefab;
+    [SerializeField] private FencePostPlacement _postPlacement = FencePostPlacement.CornersAndDoors;
+    [SerializeField] private GameObject _fencePostVisualPrefab;
+    [SerializeField] private string _fencePostVisualResourcePath;
+    [SerializeField, Min(0.01f)] private float _fencePostVisualHeightMultiplier = 0.75f;
+    [SerializeField, Min(0.01f)] private float _fencePostVisualThicknessMultiplier = 1f;
+    [SerializeField] private float _fencePostVisualYawOffset = 0f;
 
     [SerializeField] private Transform _fenceSegmentsRoot;
     [SerializeField] private GameObject _fenceSegmentPrefab;
+    [SerializeField] private List<GameObject> _fenceSegmentVisualPrefabs = new List<GameObject>();
+    [SerializeField] private List<string> _fenceSegmentVisualResourcePaths = new List<string>();
+    [SerializeField] private bool _hideFenceBlockRenderersWhenVisualsAssigned = true;
+    [SerializeField, Min(0.01f)] private float _fenceSegmentVisualHeightMultiplier = 1f;
+    [SerializeField, Min(1f)] private float _fenceSegmentVisualMaximumStretch = 1.35f;
+    [SerializeField] private float _fenceSegmentVisualYawOffset = 0f;
 
     [SerializeField] private Transform _doorMarkersRoot;
     [SerializeField] private GameObject _doorMarkerPrefab;
 
     [SerializeField] private float _blockSize = 1f;
     [SerializeField] private bool _ceilingEnabled = false;
-
-    [SerializeField] private bool _postsEnabled = true;
 
     [SerializeField, Min(4)] private int _totalPostCount = 12;
     [SerializeField, Min(0)] private int _minimumPostDistanceInCells = 2;
@@ -50,6 +83,9 @@ public sealed class RoomShellBuilder : MonoBehaviour
 
     [SerializeField] private float _floorSurfaceYOffset = 0f;
 
+    private readonly List<GameObject> _resolvedFenceSegmentVisualPrefabs = new List<GameObject>();
+    private GameObject _resolvedFencePostVisualPrefab;
+
     public float BlockSize => _blockSize;
     public int PostHeightInBlocks => _postHeightInBlocks;
     public Material FenceMaterial => GetFenceMaterial();
@@ -60,6 +96,8 @@ public sealed class RoomShellBuilder : MonoBehaviour
 
         float floorSurfaceY = GetFloorSurfaceY(roomSizeInBlocks);
 
+        ResolveFenceSegmentVisualPrefabs();
+        ResolveFencePostVisualPrefab();
         BuildFloor(roomSizeInBlocks);
         BuildFence(roomSizeInBlocks, doorPlans, floorSurfaceY);
         BuildDoorMarkers(roomSizeInBlocks, doorPlans, floorSurfaceY);
@@ -173,31 +211,33 @@ public sealed class RoomShellBuilder : MonoBehaviour
         AddCornerPosts(postCells, roomSizeInBlocks);
         AddDoorEdgePosts(postCells, roomSizeInBlocks, doorPlans, northDoorMask, southDoorMask, eastDoorMask, westDoorMask);
 
-        List<Vector2Int> perimeterCandidates = BuildPerimeterCandidates(roomSizeInBlocks, northDoorMask, southDoorMask, eastDoorMask, westDoorMask, postCells);
-
-        int requiredPostCount = postCells.Count;
-        int desiredPostCount = _totalPostCount;
-
-        if (desiredPostCount < requiredPostCount)
+        if (_postPlacement == FencePostPlacement.EveryFenceSegment)
         {
-            desiredPostCount = requiredPostCount;
-        }
+            List<Vector2Int> perimeterCandidates = BuildPerimeterCandidates(roomSizeInBlocks, northDoorMask, southDoorMask, eastDoorMask, westDoorMask, postCells);
+            int requiredPostCount = postCells.Count;
+            int desiredPostCount = _totalPostCount;
 
-        int additionalNeeded = desiredPostCount - requiredPostCount;
-
-        if (additionalNeeded > 0 && perimeterCandidates.Count > 0)
-        {
-            int maximumAddable = perimeterCandidates.Count;
-
-            if (additionalNeeded > maximumAddable)
+            if (desiredPostCount < requiredPostCount)
             {
-                additionalNeeded = maximumAddable;
+                desiredPostCount = requiredPostCount;
             }
 
-            AddDistributedPosts(postCells, perimeterCandidates, additionalNeeded, _minimumPostDistanceInCells);
+            int additionalNeeded = desiredPostCount - requiredPostCount;
+
+            if (additionalNeeded > 0 && perimeterCandidates.Count > 0)
+            {
+                int maximumAddable = perimeterCandidates.Count;
+
+                if (additionalNeeded > maximumAddable)
+                {
+                    additionalNeeded = maximumAddable;
+                }
+
+                AddDistributedPosts(postCells, perimeterCandidates, additionalNeeded, _minimumPostDistanceInCells);
+            }
         }
 
-        if (_postsEnabled == true)
+        if (ShouldCreateFencePosts() == true)
         {
             CreatePosts(postCells, roomSizeInBlocks, floorSurfaceY);
         }
@@ -654,7 +694,68 @@ public sealed class RoomShellBuilder : MonoBehaviour
         float scaleY = _postHeightInBlocks * _blockSize;
         float scaleZ = _blockSize;
 
-        postInstance.transform.localScale = new Vector3(scaleX, scaleY, scaleZ);
+        Vector3 targetSize = new Vector3(scaleX, scaleY, scaleZ);
+        postInstance.transform.localScale = targetSize;
+
+        if (_resolvedFencePostVisualPrefab != null)
+        {
+            HideBlockRenderers(postInstance);
+            CreateFencePostVisual(localPositionX, localPositionZ, inwardDirection, floorSurfaceY);
+        }
+    }
+
+    private void CreateFencePostVisual(float localPositionX, float localPositionZ, Vector3 inwardDirection, float floorSurfaceY)
+    {
+        GameObject visualInstance = Instantiate(_resolvedFencePostVisualPrefab, _fencePostsRoot);
+
+        Bounds localBounds;
+        bool hasBounds = TryGetLocalRendererBounds(visualInstance.transform, out localBounds);
+
+        if (hasBounds == false)
+        {
+            throw new InvalidOperationException(nameof(Renderer));
+        }
+
+        Vector3 targetSize = GetFencePostVisualTargetSize();
+        float sourceThickness = Mathf.Max(localBounds.size.x, localBounds.size.z);
+        float horizontalScale = GetVisualAxisScale(targetSize.x, sourceThickness);
+        Vector3 axisScale = new Vector3(
+            horizontalScale,
+            GetVisualAxisScale(targetSize.y, localBounds.size.y),
+            horizontalScale
+        );
+        Quaternion visualRotation = GetFenceFaceRotation(inwardDirection) * Quaternion.Euler(0f, _fencePostVisualYawOffset, 0f);
+        Vector3 localPosition = new Vector3(
+            localPositionX,
+            GetFenceVisualLocalPositionY(floorSurfaceY, targetSize.y, _postPivotAtBase),
+            localPositionZ
+        );
+
+        visualInstance.transform.localScale = Vector3.Scale(visualInstance.transform.localScale, axisScale);
+        visualInstance.transform.localRotation = visualRotation;
+        visualInstance.transform.localPosition = localPosition - (visualRotation * Vector3.Scale(localBounds.center, axisScale));
+    }
+
+    private Vector3 GetFencePostVisualTargetSize()
+    {
+        float heightMultiplier = _fencePostVisualHeightMultiplier;
+
+        if (heightMultiplier < MinVisualSize)
+        {
+            heightMultiplier = MinVisualSize;
+        }
+
+        float thicknessMultiplier = _fencePostVisualThicknessMultiplier;
+
+        if (thicknessMultiplier < MinVisualSize)
+        {
+            thicknessMultiplier = MinVisualSize;
+        }
+
+        float thickness = _blockSize * thicknessMultiplier;
+        float height = _postHeightInBlocks * _blockSize * heightMultiplier;
+
+        return new Vector3(thickness, height, thickness);
     }
 
     private void CreateFenceSegment(DoorSide side, Vector3Int roomSizeInBlocks, int indexA, int indexB, float floorSurfaceY)
@@ -676,7 +777,7 @@ public sealed class RoomShellBuilder : MonoBehaviour
 
         float endGapInUnits = 0f;
 
-        if (_postsEnabled == true)
+        if (ShouldKeepSegmentEndGap() == true)
         {
             endGapInUnits = _segmentEndGapInBlocks * _blockSize;
         }
@@ -698,7 +799,343 @@ public sealed class RoomShellBuilder : MonoBehaviour
         float heightScale = _segmentHeightInBlocks * _blockSize;
         float thicknessScale = _blockSize;
 
-        segmentInstance.transform.localScale = new Vector3(thicknessScale, heightScale, segmentLengthInUnits);
+        Vector3 targetSize = new Vector3(thicknessScale, heightScale, segmentLengthInUnits);
+        segmentInstance.transform.localScale = targetSize;
+
+        GameObject visualPrefab = GetFenceSegmentVisualPrefab(side, indexA, indexB);
+
+        if (visualPrefab != null)
+        {
+            Vector3 visualTargetSize = GetFenceSegmentVisualTargetSize(targetSize);
+            Vector3 visualPosition = segmentInstance.transform.localPosition;
+            visualPosition.y = GetFenceVisualLocalPositionY(floorSurfaceY, visualTargetSize.y, _segmentPivotAtBase);
+
+            HideBlockRenderers(segmentInstance);
+            CreateFenceVisuals(visualPrefab, _fenceSegmentsRoot, visualPosition, segmentInstance.transform.localRotation, visualTargetSize);
+        }
+    }
+
+    private Vector3 GetFenceSegmentVisualTargetSize(Vector3 targetSize)
+    {
+        float heightMultiplier = _fenceSegmentVisualHeightMultiplier;
+
+        if (heightMultiplier < MinVisualSize)
+        {
+            heightMultiplier = MinVisualSize;
+        }
+
+        return new Vector3(targetSize.x, targetSize.y * heightMultiplier, targetSize.z);
+    }
+
+    private float GetFenceVisualLocalPositionY(float floorSurfaceY, float heightInUnits, bool pivotAtBase)
+    {
+        if (pivotAtBase == true)
+        {
+            return floorSurfaceY;
+        }
+
+        return floorSurfaceY + (heightInUnits * 0.5f);
+    }
+
+    private GameObject GetFenceSegmentVisualPrefab(DoorSide side, int indexA, int indexB)
+    {
+        if (_resolvedFenceSegmentVisualPrefabs.Count == 0)
+        {
+            return null;
+        }
+
+        int sideIndex = (int)side;
+        int index = Mathf.Abs((sideIndex * 31) + (indexA * 17) + indexB);
+        index %= _resolvedFenceSegmentVisualPrefabs.Count;
+
+        return _resolvedFenceSegmentVisualPrefabs[index];
+    }
+
+    private void ResolveFenceSegmentVisualPrefabs()
+    {
+        _resolvedFenceSegmentVisualPrefabs.Clear();
+
+        for (int prefabIndex = 0; prefabIndex < _fenceSegmentVisualPrefabs.Count; prefabIndex++)
+        {
+            GameObject prefab = _fenceSegmentVisualPrefabs[prefabIndex];
+
+            if (prefab == null)
+            {
+                continue;
+            }
+
+            _resolvedFenceSegmentVisualPrefabs.Add(prefab);
+        }
+
+        for (int pathIndex = 0; pathIndex < _fenceSegmentVisualResourcePaths.Count; pathIndex++)
+        {
+            string resourcePath = _fenceSegmentVisualResourcePaths[pathIndex];
+
+            if (string.IsNullOrWhiteSpace(resourcePath) == true)
+            {
+                throw new InvalidOperationException(nameof(_fenceSegmentVisualResourcePaths));
+            }
+
+            GameObject prefab = Resources.Load<GameObject>(resourcePath);
+
+            if (prefab == null)
+            {
+                throw new InvalidOperationException(nameof(_fenceSegmentVisualResourcePaths));
+            }
+
+            _resolvedFenceSegmentVisualPrefabs.Add(prefab);
+        }
+    }
+
+    private void ResolveFencePostVisualPrefab()
+    {
+        _resolvedFencePostVisualPrefab = _fencePostVisualPrefab;
+
+        if (_resolvedFencePostVisualPrefab != null)
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_fencePostVisualResourcePath) == true)
+        {
+            return;
+        }
+
+        _resolvedFencePostVisualPrefab = Resources.Load<GameObject>(_fencePostVisualResourcePath);
+
+        if (_resolvedFencePostVisualPrefab == null)
+        {
+            throw new InvalidOperationException(nameof(_fencePostVisualResourcePath));
+        }
+    }
+
+    private bool ShouldCreateFencePosts()
+    {
+        return _postPlacement != FencePostPlacement.None;
+    }
+
+    private bool ShouldKeepSegmentEndGap()
+    {
+        if (ShouldCreateFencePosts() == false)
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    private void CreateFenceVisuals(GameObject visualPrefab, Transform rootTransform, Vector3 localPosition, Quaternion localRotation, Vector3 targetSize)
+    {
+        GameObject firstVisualInstance = Instantiate(visualPrefab, rootTransform);
+
+        Bounds localBounds;
+        bool hasBounds = TryGetLocalRendererBounds(firstVisualInstance.transform, out localBounds);
+
+        if (hasBounds == false)
+        {
+            throw new InvalidOperationException(nameof(Renderer));
+        }
+
+        FenceVisualMetrics metrics = new FenceVisualMetrics(localBounds);
+        float uniformScale = GetFenceVisualUniformScale(metrics, targetSize);
+        int pieceCount = GetFenceVisualPieceCount(metrics, targetSize.z, uniformScale);
+        float pieceLength = targetSize.z / pieceCount;
+        Vector3 pieceTargetSize = new Vector3(targetSize.x, targetSize.y, pieceLength);
+        float startOffset = targetSize.z * -0.5f;
+
+        for (int pieceIndex = 0; pieceIndex < pieceCount; pieceIndex++)
+        {
+            GameObject visualInstance = firstVisualInstance;
+
+            if (pieceIndex > 0)
+            {
+                visualInstance = Instantiate(visualPrefab, rootTransform);
+            }
+
+            float pieceOffset = startOffset + (pieceLength * (pieceIndex + 0.5f));
+            Vector3 piecePosition = localPosition + (localRotation * new Vector3(0f, 0f, pieceOffset));
+            ConfigureFenceVisual(visualInstance, piecePosition, localRotation, pieceTargetSize, metrics, uniformScale);
+        }
+    }
+
+    private int GetFenceVisualPieceCount(FenceVisualMetrics metrics, float targetLength, float uniformScale)
+    {
+        float sourceLength = metrics.SourceLength;
+
+        if (sourceLength < MinVisualSize)
+        {
+            return 1;
+        }
+
+        float maximumStretch = GetFenceVisualMaximumStretch();
+        float maximumPieceLength = sourceLength * maximumStretch;
+
+        if (maximumPieceLength < MinVisualSize)
+        {
+            return 1;
+        }
+
+        float uniformPieceLength = sourceLength * uniformScale;
+
+        if (uniformPieceLength < MinVisualSize)
+        {
+            uniformPieceLength = maximumPieceLength;
+        }
+
+        int pieceCount = Mathf.Max(1, Mathf.RoundToInt(targetLength / uniformPieceLength));
+        float pieceScale = GetVisualAxisScale(targetLength / pieceCount, sourceLength);
+
+        if (pieceScale > maximumStretch)
+        {
+            pieceCount = Mathf.CeilToInt(targetLength / maximumPieceLength);
+        }
+
+        return Mathf.Max(1, pieceCount);
+    }
+
+    private void ConfigureFenceVisual(GameObject visualInstance, Vector3 localPosition, Quaternion localRotation, Vector3 targetSize, FenceVisualMetrics metrics, float uniformScale)
+    {
+        Vector3 baseScale = visualInstance.transform.localScale;
+        Vector3 axisScale = GetFenceVisualAxisScale(metrics.LocalBounds.size, targetSize, metrics.LengthAlongX, uniformScale);
+        Vector3 visualScale = new Vector3(
+            baseScale.x * axisScale.x,
+            baseScale.y * axisScale.y,
+            baseScale.z * axisScale.z
+        );
+        Quaternion axisRotation = GetFenceVisualAxisRotation(metrics.LengthAlongX);
+        Quaternion visualRotation = localRotation * axisRotation * Quaternion.Euler(0f, _fenceSegmentVisualYawOffset, 0f);
+
+        visualInstance.transform.localScale = visualScale;
+        visualInstance.transform.localRotation = visualRotation;
+        visualInstance.transform.localPosition = localPosition - (visualRotation * Vector3.Scale(metrics.LocalBounds.center, axisScale));
+    }
+
+    private Vector3 GetFenceVisualAxisScale(Vector3 sourceSize, Vector3 targetSize, bool lengthAlongX, float uniformScale)
+    {
+        if (lengthAlongX == true)
+        {
+            return new Vector3(
+                GetVisualAxisScale(targetSize.z, sourceSize.x),
+                uniformScale,
+                uniformScale
+            );
+        }
+
+        return new Vector3(
+            uniformScale,
+            uniformScale,
+            GetVisualAxisScale(targetSize.z, sourceSize.z)
+        );
+    }
+
+    private Quaternion GetFenceVisualAxisRotation(bool lengthAlongX)
+    {
+        if (lengthAlongX == true)
+        {
+            return Quaternion.Euler(0f, -90f, 0f);
+        }
+
+        return Quaternion.identity;
+    }
+
+    private bool TryGetLocalRendererBounds(Transform rootTransform, out Bounds localBounds)
+    {
+        Renderer[] renderers = rootTransform.GetComponentsInChildren<Renderer>(true);
+        localBounds = new Bounds(Vector3.zero, Vector3.zero);
+        bool hasBounds = false;
+
+        for (int rendererIndex = 0; rendererIndex < renderers.Length; rendererIndex++)
+        {
+            Renderer renderer = renderers[rendererIndex];
+
+            if (renderer == null)
+            {
+                continue;
+            }
+
+            Bounds rendererBounds = renderer.bounds;
+            EncapsulateWorldPoint(rootTransform, rendererBounds.min, ref localBounds, ref hasBounds);
+            EncapsulateWorldPoint(rootTransform, rendererBounds.max, ref localBounds, ref hasBounds);
+            EncapsulateWorldPoint(rootTransform, new Vector3(rendererBounds.min.x, rendererBounds.min.y, rendererBounds.max.z), ref localBounds, ref hasBounds);
+            EncapsulateWorldPoint(rootTransform, new Vector3(rendererBounds.min.x, rendererBounds.max.y, rendererBounds.min.z), ref localBounds, ref hasBounds);
+            EncapsulateWorldPoint(rootTransform, new Vector3(rendererBounds.max.x, rendererBounds.min.y, rendererBounds.min.z), ref localBounds, ref hasBounds);
+            EncapsulateWorldPoint(rootTransform, new Vector3(rendererBounds.min.x, rendererBounds.max.y, rendererBounds.max.z), ref localBounds, ref hasBounds);
+            EncapsulateWorldPoint(rootTransform, new Vector3(rendererBounds.max.x, rendererBounds.min.y, rendererBounds.max.z), ref localBounds, ref hasBounds);
+            EncapsulateWorldPoint(rootTransform, new Vector3(rendererBounds.max.x, rendererBounds.max.y, rendererBounds.min.z), ref localBounds, ref hasBounds);
+        }
+
+        return hasBounds;
+    }
+
+    private void EncapsulateWorldPoint(Transform rootTransform, Vector3 worldPoint, ref Bounds localBounds, ref bool hasBounds)
+    {
+        Vector3 localPoint = rootTransform.InverseTransformPoint(worldPoint);
+
+        if (hasBounds == false)
+        {
+            localBounds = new Bounds(localPoint, Vector3.zero);
+            hasBounds = true;
+            return;
+        }
+
+        localBounds.Encapsulate(localPoint);
+    }
+
+    private float GetVisualAxisScale(float targetSize, float sourceSize)
+    {
+        if (sourceSize < MinVisualSize)
+        {
+            return 1f;
+        }
+
+        return targetSize / sourceSize;
+    }
+
+    private float GetFenceVisualUniformScale(FenceVisualMetrics metrics, Vector3 targetSize)
+    {
+        float scale = GetVisualAxisScale(targetSize.y, metrics.LocalBounds.size.y);
+        float maximumStretch = GetFenceVisualMaximumStretch();
+
+        if (scale > maximumStretch)
+        {
+            return maximumStretch;
+        }
+
+        return scale;
+    }
+
+    private float GetFenceVisualMaximumStretch()
+    {
+        float maximumStretch = _fenceSegmentVisualMaximumStretch;
+
+        if (maximumStretch < 1f)
+        {
+            maximumStretch = 1f;
+        }
+
+        return maximumStretch;
+    }
+
+    private void HideBlockRenderers(GameObject blockInstance)
+    {
+        if (_hideFenceBlockRenderersWhenVisualsAssigned == false)
+        {
+            return;
+        }
+
+        Renderer[] renderers = blockInstance.GetComponentsInChildren<Renderer>(true);
+
+        for (int rendererIndex = 0; rendererIndex < renderers.Length; rendererIndex++)
+        {
+            Renderer renderer = renderers[rendererIndex];
+
+            if (renderer == null)
+            {
+                continue;
+            }
+
+            renderer.enabled = false;
+        }
     }
 
     private Quaternion GetFenceSegmentRotation(DoorSide side)
