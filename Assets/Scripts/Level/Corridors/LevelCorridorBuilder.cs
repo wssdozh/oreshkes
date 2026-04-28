@@ -48,6 +48,7 @@ public sealed class LevelCorridorBuilder : MonoBehaviour
 
     [SerializeField] private Vector3 _floorLocalOffset;
     [SerializeField, Min(0.01f)] private float _floorTextureTilingMultiplier = 0.2f;
+    [SerializeField, Min(0f)] private float _floorEndTrimInBlocks = 0.5f;
 
     [Header("Walls (optional)")]
     [SerializeField] private GameObject _wallPrefab;
@@ -180,7 +181,8 @@ public sealed class LevelCorridorBuilder : MonoBehaviour
         corridorRoot.transform.rotation = rotation;
         corridorRoot.transform.SetParent(parent, true);
 
-        GameObject floor = BuildFloor(corridorRoot.transform, lengthUnits, widthUnits, horizontalScale, verticalScale);
+        float floorLengthUnits = GetFloorLengthUnits(lengthUnits, horizontalScale);
+        GameObject floor = BuildFloor(corridorRoot.transform, floorLengthUnits, widthUnits, horizontalScale, verticalScale);
 
         if (_wallPrefab != null)
         {
@@ -236,6 +238,19 @@ public sealed class LevelCorridorBuilder : MonoBehaviour
         EnableColliders(floor);
 
         return floor;
+    }
+
+    private float GetFloorLengthUnits(float lengthUnits, float horizontalScale)
+    {
+        float trimUnits = _floorEndTrimInBlocks * _blockSize * horizontalScale;
+        float floorLengthUnits = lengthUnits - (trimUnits * 2f);
+
+        if (floorLengthUnits < MinSize)
+        {
+            return MinSize;
+        }
+
+        return floorLengthUnits;
     }
 
     private void ApplyFloorTextureScale(GameObject floor, float scaleX, float scaleZ)
