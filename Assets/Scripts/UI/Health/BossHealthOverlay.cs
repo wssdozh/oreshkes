@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using DG.Tweening;
 using JunkyardBoss;
 using UnityEngine;
@@ -22,12 +23,14 @@ public sealed class BossHealthOverlay : MonoBehaviour
     private HealthTextIndicator[] _textIndicators;
     private BossSegmentedHealthIndicator[] _segmentedIndicators;
     private Sequence _visibilitySequence;
+    private Coroutine _bossBindingCoroutine;
     private BossExcavator _boss;
     private Health _bossHealth;
     private RoomCombatLock _roomCombatLock;
     private Vector2 _shownAnchoredPosition;
-    private float _searchTimer;
     private bool _isShown;
+    private bool _isInitialized;
+    private WaitForSecondsRealtime _searchWait;
 
     public void Initialize(RectTransform uiRoot, RectTransform indicatorTemplate)
     {
@@ -45,41 +48,37 @@ public sealed class BossHealthOverlay : MonoBehaviour
         _indicatorTemplate = indicatorTemplate;
         BuildView();
         ApplyHiddenState();
+        _isInitialized = true;
+
+        if (isActiveAndEnabled)
+        {
+            StartRuntime();
+        }
     }
 
     private void OnEnable()
     {
-        _searchTimer = 0f;
+        if (_isInitialized == false)
+        {
+            return;
+        }
+
+        StartRuntime();
     }
 
     private void OnDisable()
     {
-        UnbindBoss();
-        KillVisibilitySequence();
+        if (_isInitialized == false)
+        {
+            return;
+        }
+
+        StopRuntime();
 
         if (_panelTransform != null)
         {
             ApplyHiddenState();
         }
-    }
-
-    private void Update()
-    {
-        if (_panelTransform == null)
-        {
-            return;
-        }
-
-        TickBossBinding();
-
-        if (ShouldShow() == false)
-        {
-            Hide();
-
-            return;
-        }
-
-        Show();
     }
 
     private void BuildView()
@@ -162,6 +161,11 @@ public sealed class BossHealthOverlay : MonoBehaviour
 
     private void ClearIndicators()
     {
+        if (_sliderIndicators == null || _textIndicators == null || _segmentedIndicators == null)
+        {
+            return;
+        }
+
         int sliderIndex = 0;
 
         while (sliderIndex < _sliderIndicators.Length)
@@ -259,23 +263,15 @@ public sealed class BossHealthOverlay : MonoBehaviour
         }
     }
 
-    private void TickBossBinding()
+    private IEnumerator BossBindingRoutine()
     {
-        if (HasValidBossBinding())
+        while (true)
         {
-            return;
+            RefreshBossBinding();
+            RefreshVisibility();
+
+            yield return _searchWait;
         }
-
-        UnbindBoss();
-        _searchTimer -= Time.unscaledDeltaTime;
-
-        if (_searchTimer > 0f)
-        {
-            return;
-        }
-
-        _searchTimer = SearchInterval;
-        TryBindBoss();
     }
 
     private bool HasValidBossBinding()
@@ -296,6 +292,17 @@ public sealed class BossHealthOverlay : MonoBehaviour
         }
 
         return true;
+    }
+
+    private void RefreshBossBinding()
+    {
+        if (HasValidBossBinding())
+        {
+            return;
+        }
+
+        UnbindBoss();
+        TryBindBoss();
     }
 
     private void TryBindBoss()
@@ -365,6 +372,7 @@ public sealed class BossHealthOverlay : MonoBehaviour
         _bossHealth.Ended += OnBossHealthEnded;
         BindIndicators(_bossHealth);
         BindSegmentedIndicators(_boss);
+        RefreshVisibility();
     }
 
     private void UnbindBoss()
@@ -378,6 +386,23 @@ public sealed class BossHealthOverlay : MonoBehaviour
         _boss = null;
         _bossHealth = null;
         _roomCombatLock = null;
+    }
+
+    private void RefreshVisibility()
+    {
+        if (_panelTransform == null)
+        {
+            return;
+        }
+
+        if (ShouldShow() == false)
+        {
+            Hide();
+
+            return;
+        }
+
+        Show();
     }
 
     private bool ShouldShow()
@@ -482,6 +507,62 @@ public sealed class BossHealthOverlay : MonoBehaviour
     private void OnBossHealthEnded()
     {
         Hide();
+    }
+
+    private void OnRoomCombatLockStateChanged()
+    {
+        if (_isInitialized == false)
+        {
+            return;
+        }
+
+        RefreshBossBinding();
+        RefreshVisibility();
+    }
+
+    private void StartRuntime()
+    {
+        RoomCombatLock.StateChanged -= OnRoomCombatLockStateChanged;
+        RoomCombatLock.StateChanged += OnRoomCombatLockStateChanged;
+        EnsureSearchWait();
+        RestartBossBindingRoutine();
+        RefreshBossBinding();
+        RefreshVisibility();
+    }
+
+    private void StopRuntime()
+    {
+        RoomCombatLock.StateChanged -= OnRoomCombatLockStateChanged;
+        StopBossBindingRoutine();
+        UnbindBoss();
+        KillVisibilitySequence();
+    }
+
+    private void RestartBossBindingRoutine()
+    {
+        StopBossBindingRoutine();
+        _bossBindingCoroutine = StartCoroutine(BossBindingRoutine());
+    }
+
+    private void StopBossBindingRoutine()
+    {
+        if (_bossBindingCoroutine == null)
+        {
+            return;
+        }
+
+        StopCoroutine(_bossBindingCoroutine);
+        _bossBindingCoroutine = null;
+    }
+
+    private void EnsureSearchWait()
+    {
+        if (_searchWait != null)
+        {
+            return;
+        }
+
+        _searchWait = new WaitForSecondsRealtime(SearchInterval);
     }
 
     private void KillVisibilitySequence()

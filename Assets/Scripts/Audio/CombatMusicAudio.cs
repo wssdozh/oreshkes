@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections;
 using UnityEngine;
 
 [DisallowMultipleComponent]
@@ -12,6 +13,7 @@ public sealed class CombatMusicAudio : MonoBehaviour
 
     private bool _isCombatActive;
     private float _releaseTimer;
+    private Coroutine _fadeCoroutine;
 
     private void Awake()
     {
@@ -46,20 +48,13 @@ public sealed class CombatMusicAudio : MonoBehaviour
         RoomCombatLock.StateChanged -= OnRoomCombatLockStateChanged;
         _isCombatActive = false;
         _releaseTimer = 0f;
+        StopFadeRoutine();
 
         if (_audioSource != null)
         {
             _audioSource.volume = 0f;
             _audioSource.Stop();
         }
-    }
-
-    private void Update()
-    {
-        TickReleaseTimer();
-
-        float targetVolume = _isCombatActive || _releaseTimer > 0f ? _targetVolume : 0f;
-        _audioSource.volume = Mathf.MoveTowards(_audioSource.volume, targetVolume, _fadeSpeed * Time.deltaTime);
     }
 
     private void OnRoomCombatLockStateChanged()
@@ -75,6 +70,8 @@ public sealed class CombatMusicAudio : MonoBehaviour
         {
             _isCombatActive = true;
             _releaseTimer = 0f;
+            EnsurePlaybackStarted();
+            EnsureFadeRoutine();
             return;
         }
 
@@ -82,18 +79,60 @@ public sealed class CombatMusicAudio : MonoBehaviour
         {
             _isCombatActive = false;
             _releaseTimer = _releaseDelay;
+            EnsureFadeRoutine();
+            return;
         }
+
+        if (_audioSource.volume > 0f)
+        {
+            EnsureFadeRoutine();
+            return;
+        }
+
+        StopPlaybackIfSilent();
     }
 
-    private void TickReleaseTimer()
+    private IEnumerator FadeRoutine()
     {
-        if (_isCombatActive)
-            return;
+        while (true)
+        {
+            if (_isCombatActive == false && _releaseTimer > 0f)
+            {
+                _releaseTimer = Mathf.Max(0f, _releaseTimer - Time.deltaTime);
+            }
 
-        if (_releaseTimer <= 0f)
-            return;
+            float targetVolume = 0f;
 
-        _releaseTimer = Mathf.Max(0f, _releaseTimer - Time.deltaTime);
+            if (_isCombatActive || _releaseTimer > 0f)
+            {
+                targetVolume = _targetVolume;
+            }
+
+            if (targetVolume > 0f)
+            {
+                EnsurePlaybackStarted();
+            }
+
+            _audioSource.volume = Mathf.MoveTowards(_audioSource.volume, targetVolume, _fadeSpeed * Time.deltaTime);
+
+            if (Mathf.Abs(_audioSource.volume - targetVolume) <= 0.0001f)
+            {
+                _audioSource.volume = targetVolume;
+
+                if (targetVolume <= 0f)
+                {
+                    StopPlaybackIfSilent();
+                }
+
+                if (_isCombatActive == false && _releaseTimer <= 0f)
+                {
+                    _fadeCoroutine = null;
+                    yield break;
+                }
+            }
+
+            yield return null;
+        }
     }
 
     private bool HasActiveCombat()
@@ -109,5 +148,51 @@ public sealed class CombatMusicAudio : MonoBehaviour
         }
 
         return false;
+    }
+
+    private void EnsurePlaybackStarted()
+    {
+        if (_audioSource.isPlaying)
+        {
+            return;
+        }
+
+        _audioSource.Play();
+    }
+
+    private void StopPlaybackIfSilent()
+    {
+        if (_audioSource.volume > 0f)
+        {
+            return;
+        }
+
+        if (_audioSource.isPlaying == false)
+        {
+            return;
+        }
+
+        _audioSource.Stop();
+    }
+
+    private void EnsureFadeRoutine()
+    {
+        if (_fadeCoroutine != null)
+        {
+            return;
+        }
+
+        _fadeCoroutine = StartCoroutine(FadeRoutine());
+    }
+
+    private void StopFadeRoutine()
+    {
+        if (_fadeCoroutine == null)
+        {
+            return;
+        }
+
+        StopCoroutine(_fadeCoroutine);
+        _fadeCoroutine = null;
     }
 }
