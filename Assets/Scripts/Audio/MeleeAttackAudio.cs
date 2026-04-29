@@ -85,7 +85,7 @@ public sealed class MeleeAttackAudio : MonoBehaviour
         }
 
         _audioSource.pitch = GetPitch(item);
-        _audioSource.PlayOneShot(clip, _volumeScale);
+        AudioOneShotGate.TryPlay(_audioSource, clip, _volumeScale, AudioOneShotCategory.Hit);
     }
 
     private float GetPitch(Item item)

@@ -62,7 +62,7 @@ public sealed class AmmoImpactAudio : AmmoLifeListener
 
     protected override void OnAmmoTargetImpacted(Collider hitCollider)
     {
-        if (TryPlay(_targetImpactClips))
+        if (TryHandleImpactSound(_targetImpactClips))
         {
             _isImpactStarted = true;
         }
@@ -75,13 +75,13 @@ public sealed class AmmoImpactAudio : AmmoLifeListener
             return;
         }
 
-        if (TryPlay(_impactClips))
+        if (TryHandleImpactSound(_impactClips))
         {
             _isImpactStarted = true;
         }
     }
 
-    private bool TryPlay(AudioClip[] clips)
+    private bool TryHandleImpactSound(AudioClip[] clips)
     {
         AudioClip clip = GetRandomClip(clips);
 
@@ -91,7 +91,7 @@ public sealed class AmmoImpactAudio : AmmoLifeListener
         }
 
         _audioSource.pitch = 1f;
-        _audioSource.PlayOneShot(clip, _volumeScale);
+        AudioOneShotGate.TryPlay(_audioSource, clip, _volumeScale, AudioOneShotCategory.Hit);
 
         return true;
     }

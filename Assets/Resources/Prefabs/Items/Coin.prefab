@@ -152,7 +152,7 @@ AudioSource:
   Mute: 0
   Spatialize: 0
   SpatializePostEffects: 0
-  Priority: 128
+  Priority: 220
   DopplerLevel: 1
   MinDistance: 1
   MaxDistance: 7
@@ -247,6 +247,7 @@ MonoBehaviour:
   _clips:
   - {fileID: 8300000, guid: 8589503fa22b6af43aa811058488681c, type: 3}
   _volumeScale: 0.56
+  _category: 3
 --- !u!1001 &5669329180580312587
 PrefabInstance:
   m_ObjectHideFlags: 0

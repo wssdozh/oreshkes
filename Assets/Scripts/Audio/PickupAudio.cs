@@ -8,6 +8,7 @@ public sealed class PickupAudio : MonoBehaviour
     [SerializeField] private BasePickup _pickup;
     [SerializeField] private AudioClip[] _clips;
     [SerializeField, Min(0f)] private float _volumeScale = 1f;
+    [SerializeField] private AudioOneShotCategory _category = AudioOneShotCategory.Default;
 
     private void Awake()
     {
@@ -50,7 +51,7 @@ public sealed class PickupAudio : MonoBehaviour
         }
 
         _audioSource.pitch = 1f;
-        _audioSource.PlayOneShot(clip, _volumeScale);
+        AudioOneShotGate.TryPlay(_audioSource, clip, _volumeScale, _category);
     }
 
     private AudioClip GetRandomClip()

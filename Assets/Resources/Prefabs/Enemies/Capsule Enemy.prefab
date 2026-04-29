@@ -604,8 +604,8 @@ MonoBehaviour:
   _audioSource: {fileID: 912200000000000001}
   _animator: {fileID: 2587704385259913141}
   _profile: {fileID: 11400000, guid: e693cd2cf4e44d7aa213330e08980871, type: 2}
-  _walkVolumeScale: 0.09
-  _runVolumeScale: 0.14
+  _walkVolumeScale: 0.24
+  _runVolumeScale: 0.36
 --- !u!114 &915320000000000001
 MonoBehaviour:
   m_ObjectHideFlags: 0

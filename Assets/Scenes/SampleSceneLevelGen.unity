@@ -16849,13 +16849,13 @@ AudioSource:
   m_audioClip: {fileID: 0}
   m_Resource: {fileID: 8300000, guid: f3eaa1aeef0c87f4baa3b4859fa33e9b, type: 3}
   m_PlayOnAwake: 1
-  m_Volume: 0.7
+  m_Volume: 1
   m_Pitch: 1
   Loop: 1
   Mute: 0
   Spatialize: 0
   SpatializePostEffects: 0
-  Priority: 180
+  Priority: 16
   DopplerLevel: 0
   MinDistance: 1
   MaxDistance: 1.000001
@@ -16952,7 +16952,7 @@ AudioSource:
   Mute: 0
   Spatialize: 0
   SpatializePostEffects: 0
-  Priority: 180
+  Priority: 16
   DopplerLevel: 0
   MinDistance: 1
   MaxDistance: 1.000001
@@ -17043,8 +17043,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CombatMusicAudio
   _audioSource: {fileID: 901000000000000004}
-  _targetVolume: 0.1
+  _targetVolume: 0.06
   _fadeSpeed: 0.6
+  _releaseDelay: 1.2
 --- !u!1001 &1751371739431020652
 PrefabInstance:
   m_ObjectHideFlags: 0

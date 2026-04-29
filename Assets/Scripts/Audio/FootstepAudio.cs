@@ -74,7 +74,7 @@ public sealed class FootstepAudio : MonoBehaviour
         }
 
         _audioSource.pitch = 1f;
-        _audioSource.PlayOneShot(clip, GetVolumeScale(isRunning));
+        AudioOneShotGate.TryPlay(_audioSource, clip, GetVolumeScale(isRunning), AudioOneShotCategory.Footstep);
     }
 
     private float GetVolumeScale(bool isRunning)

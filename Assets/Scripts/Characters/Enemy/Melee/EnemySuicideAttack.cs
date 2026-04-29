@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using UnityEngine.Audio;
 
 [DisallowMultipleComponent]
 public sealed class EnemySuicideAttack : MonoBehaviour
@@ -23,6 +24,12 @@ public sealed class EnemySuicideAttack : MonoBehaviour
     [SerializeField] private float _impulse = 3.5f;
     [SerializeField] private float _up = 0.35f;
     [SerializeField] private float _fxLife = 5f;
+
+    [Header("Audio")]
+    [SerializeField] private AudioClip _explosionClip;
+    [SerializeField] private AudioMixerGroup _explosionMixerGroup;
+    [SerializeField, Min(0f)] private float _explosionVolumeScale = 0.75f;
+    [SerializeField, Min(0.01f)] private float _explosionMaxDistance = 18f;
 
     private bool _isActive;
     private float _delayTimer;
@@ -75,6 +82,18 @@ public sealed class EnemySuicideAttack : MonoBehaviour
         {
             throw new InvalidOperationException(nameof(_fxLife));
         }
+
+        if (_explosionClip == null)
+            throw new InvalidOperationException(nameof(_explosionClip));
+
+        if (_explosionMixerGroup == null)
+            throw new InvalidOperationException(nameof(_explosionMixerGroup));
+
+        if (_explosionVolumeScale < 0f)
+            throw new InvalidOperationException(nameof(_explosionVolumeScale));
+
+        if (_explosionMaxDistance <= 0f)
+            throw new InvalidOperationException(nameof(_explosionMaxDistance));
     }
 
     private void OnEnable()
@@ -145,6 +164,7 @@ public sealed class EnemySuicideAttack : MonoBehaviour
 
         Vector3 explosionPoint = transform.position;
         SpawnFx(explosionPoint);
+        PlayExplosionSound(explosionPoint);
 
         int hitCount = Physics.OverlapSphereNonAlloc(
             explosionPoint,
@@ -261,5 +281,22 @@ public sealed class EnemySuicideAttack : MonoBehaviour
         {
             Destroy(fxObject, _fxLife);
         }
+    }
+
+    private void PlayExplosionSound(Vector3 explosionPoint)
+    {
+        GameObject audioObject = new GameObject("Bomber Explosion Audio");
+        audioObject.transform.position = explosionPoint;
+
+        AudioSource audioSource = audioObject.AddComponent<AudioSource>();
+        audioSource.outputAudioMixerGroup = _explosionMixerGroup;
+        audioSource.playOnAwake = false;
+        audioSource.loop = false;
+        audioSource.spatialBlend = 1f;
+        audioSource.minDistance = 1f;
+        audioSource.maxDistance = _explosionMaxDistance;
+        audioSource.PlayOneShot(_explosionClip, _explosionVolumeScale);
+
+        Destroy(audioObject, _explosionClip.length + 0.1f);
     }
 }

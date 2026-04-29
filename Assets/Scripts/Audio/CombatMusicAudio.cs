@@ -8,6 +8,10 @@ public sealed class CombatMusicAudio : MonoBehaviour
     [SerializeField] private AudioSource _audioSource;
     [SerializeField, Min(0f)] private float _targetVolume = 0.14f;
     [SerializeField, Min(0f)] private float _fadeSpeed = 0.6f;
+    [SerializeField, Min(0f)] private float _releaseDelay = 1.2f;
+
+    private bool _isCombatActive;
+    private float _releaseTimer;
 
     private void Awake()
     {
@@ -20,6 +24,9 @@ public sealed class CombatMusicAudio : MonoBehaviour
         if (_fadeSpeed < 0f)
             throw new InvalidOperationException(nameof(_fadeSpeed));
 
+        if (_releaseDelay < 0f)
+            throw new InvalidOperationException(nameof(_releaseDelay));
+
         _audioSource.playOnAwake = true;
         _audioSource.loop = true;
         _audioSource.volume = 0f;
@@ -28,10 +35,65 @@ public sealed class CombatMusicAudio : MonoBehaviour
             _audioSource.Play();
     }
 
+    private void OnEnable()
+    {
+        RoomCombatLock.StateChanged += OnRoomCombatLockStateChanged;
+        RefreshCombatState();
+    }
+
+    private void OnDisable()
+    {
+        RoomCombatLock.StateChanged -= OnRoomCombatLockStateChanged;
+        _isCombatActive = false;
+        _releaseTimer = 0f;
+
+        if (_audioSource != null)
+        {
+            _audioSource.volume = 0f;
+            _audioSource.Stop();
+        }
+    }
+
     private void Update()
     {
-        float targetVolume = HasActiveCombat() ? _targetVolume : 0f;
+        TickReleaseTimer();
+
+        float targetVolume = _isCombatActive || _releaseTimer > 0f ? _targetVolume : 0f;
         _audioSource.volume = Mathf.MoveTowards(_audioSource.volume, targetVolume, _fadeSpeed * Time.deltaTime);
+    }
+
+    private void OnRoomCombatLockStateChanged()
+    {
+        RefreshCombatState();
+    }
+
+    private void RefreshCombatState()
+    {
+        bool hasActiveCombat = HasActiveCombat();
+
+        if (hasActiveCombat)
+        {
+            _isCombatActive = true;
+            _releaseTimer = 0f;
+            return;
+        }
+
+        if (_isCombatActive)
+        {
+            _isCombatActive = false;
+            _releaseTimer = _releaseDelay;
+        }
+    }
+
+    private void TickReleaseTimer()
+    {
+        if (_isCombatActive)
+            return;
+
+        if (_releaseTimer <= 0f)
+            return;
+
+        _releaseTimer = Mathf.Max(0f, _releaseTimer - Time.deltaTime);
     }
 
     private bool HasActiveCombat()

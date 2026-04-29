@@ -27,6 +27,14 @@ public sealed class RoomCombatLock : MonoBehaviour
     public bool IsLocked => _isLocked;
     public RoomRuntimeState RoomRuntimeState => _roomRuntimeState;
     public static IReadOnlyList<RoomCombatLock> Instances => s_instances;
+    public static event Action StateChanged;
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetStaticState()
+    {
+        s_instances.Clear();
+        StateChanged = null;
+    }
 
     private void Awake()
     {
@@ -80,9 +88,15 @@ public sealed class RoomCombatLock : MonoBehaviour
 
     private void OnDisable()
     {
+        bool wasLocked = _isLocked;
+        _isLocked = false;
+
         s_instances.Remove(this);
         UnsubscribeEnterTriggers();
         UnsubscribeThreats();
+
+        if (wasLocked)
+            StateChanged?.Invoke();
     }
 
     private void LockRoom()
@@ -101,6 +115,7 @@ public sealed class RoomCombatLock : MonoBehaviour
 
         _isLocked = true;
         SetGatesClosed(true, false);
+        StateChanged?.Invoke();
     }
 
     private void UnlockRoom()
@@ -109,6 +124,7 @@ public sealed class RoomCombatLock : MonoBehaviour
         _isCleared = true;
         SetGatesClosed(false, false);
         UnsubscribeThreats();
+        StateChanged?.Invoke();
     }
 
     private void BuildEnterTriggers()
