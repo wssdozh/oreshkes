@@ -29,13 +29,19 @@ namespace JunkyardBoss
         private void Awake()
         {
             if (_boss == null)
+            {
                 throw new InvalidOperationException(nameof(_boss));
+            }
 
             if (_oneShotSource == null)
+            {
                 throw new InvalidOperationException(nameof(_oneShotSource));
+            }
 
             if (_loopSource == null)
+            {
                 throw new InvalidOperationException(nameof(_loopSource));
+            }
 
             _oneShotSource.playOnAwake = false;
             _oneShotSource.loop = false;
@@ -89,7 +95,9 @@ namespace JunkyardBoss
             }
 
             if (attack == BossExcavatorAttack.Charge)
+            {
                 PlayOneShot(_chargePrepareClip, _attackVolumeScale);
+            }
         }
 
         private void OnBucketImpacted()
@@ -115,10 +123,14 @@ namespace JunkyardBoss
         private void PlayEngineLoop()
         {
             if (_engineLoopClip == null)
+            {
                 return;
+            }
 
             if (_boss.IsDead)
+            {
                 return;
+            }
 
             _loopSource.clip = _engineLoopClip;
             _loopSource.volume = _engineLoopVolume;
@@ -129,7 +141,9 @@ namespace JunkyardBoss
         private void StopEngineLoop()
         {
             if (_loopSource.isPlaying == false)
+            {
                 return;
+            }
 
             _loopSource.Stop();
         }
@@ -137,7 +151,9 @@ namespace JunkyardBoss
         private void PlayOneShot(AudioClip clip, float volumeScale)
         {
             if (clip == null)
+            {
                 return;
+            }
 
             _oneShotSource.pitch = 1f;
             _oneShotSource.PlayOneShot(clip, volumeScale);

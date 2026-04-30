@@ -370,15 +370,15 @@ MonoBehaviour:
   _boss: {fileID: 1000000000000000004}
   _oneShotSource: {fileID: 915360000000000001}
   _loopSource: {fileID: 915360000000000002}
-  _engineLoopClip: {fileID: 0}
-  _engineLoopVolume: 0
-  _bucketPrepareClip: {fileID: 0}
-  _bucketImpactClip: {fileID: 0}
-  _sweepClip: {fileID: 0}
-  _throwPrepareClip: {fileID: 0}
-  _throwReleaseClip: {fileID: 0}
-  _chargePrepareClip: {fileID: 0}
-  _chargeDashClip: {fileID: 0}
+  _engineLoopClip: {fileID: 8300000, guid: 460ea0d7c8388e248a7490a6f64b2082, type: 3}
+  _engineLoopVolume: 0.18
+  _bucketPrepareClip: {fileID: 8300000, guid: 3f40671dd12494f4e80a219810e80c21, type: 3}
+  _bucketImpactClip: {fileID: 8300000, guid: b7ded607d5d98ab4ea330e348628b17e, type: 3}
+  _sweepClip: {fileID: 8300000, guid: 38c4806b3fe8a984faf8c505d70ead36, type: 3}
+  _throwPrepareClip: {fileID: 8300000, guid: 2eacbf2c8b436c049904d38d70432cb1, type: 3}
+  _throwReleaseClip: {fileID: 8300000, guid: 73f483dd18d61ee499c5b6f8cc61b2fb, type: 3}
+  _chargePrepareClip: {fileID: 8300000, guid: 26d4a5eac2e0dcd48b5b47b2b3ca2489, type: 3}
+  _chargeDashClip: {fileID: 8300000, guid: 60abbc8ef0bdcdf46a14558c3a0347a8, type: 3}
   _attackVolumeScale: 0.35
   _impactVolumeScale: 0.48
 --- !u!114 &1000000000000000009
