@@ -35,7 +35,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.15, y: 0.15, z: 0.15}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 1
   m_Children:
   - {fileID: 8029502378269153340}
@@ -60,8 +60,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
+  m_Size: {x: 0.18, y: 0.7, z: 0.18}
+  m_Center: {x: 0, y: 0.35, z: 0}
 --- !u!54 &-7321777512984846279
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -103,6 +103,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PickupAnimator
   _moveSpeed: 5
   _stopDistance: 0.2
+  _minDuration: 0.12
+  _arcHeight: 0.25
 --- !u!114 &1864531296725922894
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -148,7 +150,25 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WeaponGrip
   _localPositionOffset: {x: -0.25, y: 0.15, z: 0.1}
-  _localRotationOffsetEuler: {x: 0, y: 90, z: 0}
+  _localRotationOffsetEuler: {x: 0, y: 0, z: 90}
+--- !u!114 &8906609727933764714
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7285996439747952689}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7edb9304ecb78644884c9c1933fac638, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HeldMode
+  _colliders:
+  - {fileID: 3548421244695068084}
+  _componentsToDisable:
+  - {fileID: 1864531296725922894}
+  _rigidbodies:
+  - {fileID: -7321777512984846279}
 --- !u!82 &915400000000000001
 AudioSource:
   m_ObjectHideFlags: 0
@@ -256,31 +276,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b6111d4f22dc4a49a87e2fb95d98a2b7, type: 3}
-  m_Name: ''
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PickupAudio
   _audioSource: {fileID: 915400000000000001}
   _pickup: {fileID: 1864531296725922894}
   _clips:
   - {fileID: 8300000, guid: 41b7aa4219e1cbf40bf3b6e7cd6646d0, type: 3}
   _volumeScale: 0.48
---- !u!114 &8906609727933764714
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7285996439747952689}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7edb9304ecb78644884c9c1933fac638, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::HeldMode
-  _colliders:
-  - {fileID: 3548421244695068084}
-  _componentsToDisable:
-  - {fileID: 1864531296725922894}
-  _rigidbodies:
-  - {fileID: -7321777512984846279}
+  _category: 0
 --- !u!1001 &4350003448625913650
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -289,14 +292,38 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 2982448150121057078}
     m_Modifications:
+    - target: {fileID: 295078281846789373, guid: ab23f9454227b8f458127b12b178c037, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 295078281846789373, guid: ab23f9454227b8f458127b12b178c037, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 295078281846789373, guid: ab23f9454227b8f458127b12b178c037, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 295078281846789373, guid: ab23f9454227b8f458127b12b178c037, type: 3}
+      propertyPath: m_ConstrainProportionsScale
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 994742599067875714, guid: ab23f9454227b8f458127b12b178c037, type: 3}
       propertyPath: m_Name
       value: Visible
       objectReference: {fileID: 0}
+    - target: {fileID: 1603587205924931784, guid: ab23f9454227b8f458127b12b178c037, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 451bf1c2d0edfeb4b9f5703ea5eda7a4, type: 2}
     - target: {fileID: 1816165582074982046, guid: ab23f9454227b8f458127b12b178c037, type: 3}
       propertyPath: m_Intensity
-      value: 9.64933
+      value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 1835841380096877377, guid: ab23f9454227b8f458127b12b178c037, type: 3}
+      propertyPath: m_Mesh
+      value: 
+      objectReference: {fileID: -509359381522794771, guid: b08a34801d1e3784b87bc2143a602206, type: 3}
     - target: {fileID: 5994525060108470030, guid: ab23f9454227b8f458127b12b178c037, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
