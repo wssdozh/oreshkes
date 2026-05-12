@@ -14,10 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Item
   _id: 5
   _displayName: Shotgun
-  _icon: {fileID: 21300000, guid: 26fccae396603fd44b4dbde3465fa106, type: 3}
+  _icon: {fileID: 21300000, guid: b05577836907c004d96aa0d4e76969e4, type: 3}
   _isStackable: 0
   _maxStack: 1
   _weaponType: 1
+  _isMultiHit: 0
   _effects: []
+  _weaponModifiers: []
   _audioProfile: {fileID: 11400000, guid: 47df3c647be82ad40acb5e6ad9ac8175, type: 2}
   _prefab: {fileID: 1864531296725922894, guid: b63d71782bd7cc94c99fbd43145c7038, type: 3}

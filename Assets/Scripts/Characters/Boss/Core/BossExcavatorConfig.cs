@@ -422,53 +422,53 @@ namespace JunkyardBoss
         [SerializeField] private float _cabinPhaseThreeMult = 1.8f;
 
         [Header("Arm")]
-        [SerializeField] private Vector3 _armDefaultBoomEuler = new Vector3(0f, 0f, -35f);
+        [SerializeField] private Vector3 _armDefaultBoomEuler = Vector3.zero;
 
-        [SerializeField] private Vector3 _armDefaultStickEuler = new Vector3(0f, 0f, 70f);
+        [SerializeField] private Vector3 _armDefaultStickEuler = Vector3.zero;
 
-        [SerializeField] private Vector3 _armDefaultBucketEuler = new Vector3(0f, 0f, -25f);
+        [SerializeField] private Vector3 _armDefaultBucketEuler = Vector3.zero;
 
-        [SerializeField] private Vector3 _armBucketPrepareBoomEuler = new Vector3(0f, 0f, -62f);
+        [SerializeField] private Vector3 _armBucketPrepareBoomEuler = new Vector3(0f, 0f, -20f);
 
-        [SerializeField] private Vector3 _armBucketPrepareStickEuler = new Vector3(0f, 0f, 110f);
+        [SerializeField] private Vector3 _armBucketPrepareStickEuler = new Vector3(0f, 0f, 25f);
 
-        [SerializeField] private Vector3 _armBucketPrepareBucketEuler = new Vector3(0f, 0f, -56f);
+        [SerializeField] private Vector3 _armBucketPrepareBucketEuler = new Vector3(0f, 0f, -20f);
 
-        [SerializeField] private Vector3 _armBucketStrikeBoomEuler = new Vector3(0f, 0f, 12f);
+        [SerializeField] private Vector3 _armBucketStrikeBoomEuler = new Vector3(0f, 0f, 47f);
 
-        [SerializeField] private Vector3 _armBucketStrikeStickEuler = new Vector3(0f, 0f, 18f);
+        [SerializeField] private Vector3 _armBucketStrikeStickEuler = new Vector3(0f, 0f, -52f);
 
-        [SerializeField] private Vector3 _armBucketStrikeBucketEuler = new Vector3(0f, 0f, 12f);
+        [SerializeField] private Vector3 _armBucketStrikeBucketEuler = new Vector3(0f, 0f, 37f);
 
-        [SerializeField] private Vector3 _armSweepBoomEuler = new Vector3(0f, 0f, 6f);
+        [SerializeField] private Vector3 _armSweepBoomEuler = new Vector3(0f, 0f, 48f);
 
-        [SerializeField] private Vector3 _armSweepStickEuler = new Vector3(0f, 0f, 14f);
+        [SerializeField] private Vector3 _armSweepStickEuler = new Vector3(0f, 0f, -82f);
 
-        [SerializeField] private Vector3 _armSweepBucketEuler = new Vector3(0f, 0f, 12f);
+        [SerializeField] private Vector3 _armSweepBucketEuler = new Vector3(0f, 0f, 44f);
 
-        [SerializeField] private Vector3 _armGrabScrapBoomEuler = new Vector3(0f, 0f, 36f);
+        [SerializeField] private Vector3 _armGrabScrapBoomEuler = new Vector3(0f, 0f, 70f);
 
-        [SerializeField] private Vector3 _armGrabScrapStickEuler = new Vector3(0f, 0f, 92f);
+        [SerializeField] private Vector3 _armGrabScrapStickEuler = new Vector3(0f, 0f, -15f);
 
-        [SerializeField] private Vector3 _armGrabScrapBucketEuler = new Vector3(0f, 0f, -62f);
+        [SerializeField] private Vector3 _armGrabScrapBucketEuler = new Vector3(0f, 0f, -35f);
 
-        [SerializeField] private Vector3 _armThrowScrapBoomEuler = new Vector3(0f, 0f, -18f);
+        [SerializeField] private Vector3 _armThrowScrapBoomEuler = new Vector3(0f, 0f, 17f);
 
-        [SerializeField] private Vector3 _armThrowScrapStickEuler = new Vector3(0f, 0f, 12f);
+        [SerializeField] private Vector3 _armThrowScrapStickEuler = new Vector3(0f, 0f, -58f);
 
-        [SerializeField] private Vector3 _armThrowScrapBucketEuler = new Vector3(0f, 0f, 42f);
+        [SerializeField] private Vector3 _armThrowScrapBucketEuler = new Vector3(0f, 0f, 67f);
 
-        [SerializeField] private Vector3 _armTrailScrapeBoomEuler = new Vector3(0f, 0f, 18f);
+        [SerializeField] private Vector3 _armTrailScrapeBoomEuler = new Vector3(0f, 0f, 53f);
 
-        [SerializeField] private Vector3 _armTrailScrapeStickEuler = new Vector3(0f, 0f, 36f);
+        [SerializeField] private Vector3 _armTrailScrapeStickEuler = new Vector3(0f, 0f, -34f);
 
-        [SerializeField] private Vector3 _armTrailScrapeBucketEuler = new Vector3(0f, 0f, -42f);
+        [SerializeField] private Vector3 _armTrailScrapeBucketEuler = new Vector3(0f, 0f, -17f);
 
-        [SerializeField] private Vector3 _armChargeBraceBoomEuler = new Vector3(0f, 0f, -38f);
+        [SerializeField] private Vector3 _armChargeBraceBoomEuler = new Vector3(0f, 0f, -3f);
 
-        [SerializeField] private Vector3 _armChargeBraceStickEuler = new Vector3(0f, 0f, 102f);
+        [SerializeField] private Vector3 _armChargeBraceStickEuler = new Vector3(0f, 0f, 32f);
 
-        [SerializeField] private Vector3 _armChargeBraceBucketEuler = new Vector3(0f, 0f, -34f);
+        [SerializeField] private Vector3 _armChargeBraceBucketEuler = new Vector3(0f, 0f, -9f);
 
         [SerializeField] private BossExcavatorAxis _armBoomAxis = BossExcavatorAxis.X;
 

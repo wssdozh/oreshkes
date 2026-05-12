@@ -97,10 +97,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 694d5fad65b30624fa917b1afa7840a3, type: 3}
-  m_Name: ''
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PickupAnimator
   _moveSpeed: 5
   _stopDistance: 0.2
+  _minDuration: 0.12
+  _arcHeight: 0.25
 --- !u!114 &1864531296725922894
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -240,7 +242,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b6111d4f22dc4a49a87e2fb95d98a2b7, type: 3}
-  m_Name: ''
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PickupAudio
   _audioSource: {fileID: 915110000000000001}
   _pickup: {fileID: 1864531296725922894}
@@ -248,6 +250,7 @@ MonoBehaviour:
   - {fileID: 8300000, guid: 68e8294906ac55f439a7dd45791b01d9, type: 3}
   - {fileID: 8300000, guid: 8589503fa22b6af43aa811058488681c, type: 3}
   _volumeScale: 0.52
+  _category: 0
 --- !u!1001 &5669329180580312587
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -263,11 +266,15 @@ PrefabInstance:
     - target: {fileID: 1603587205924931784, guid: ab23f9454227b8f458127b12b178c037, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: f665471a9c0a6294292ff940ab8d6979, type: 2}
+      objectReference: {fileID: 2100000, guid: 451bf1c2d0edfeb4b9f5703ea5eda7a4, type: 2}
     - target: {fileID: 1816165582074982046, guid: ab23f9454227b8f458127b12b178c037, type: 3}
       propertyPath: m_Intensity
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 1835841380096877377, guid: ab23f9454227b8f458127b12b178c037, type: 3}
+      propertyPath: m_Mesh
+      value: 
+      objectReference: {fileID: 7563582778146171765, guid: 5af208b67b454d04e936a3f1a293cb42, type: 3}
     - target: {fileID: 3504792399234092092, guid: ab23f9454227b8f458127b12b178c037, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 

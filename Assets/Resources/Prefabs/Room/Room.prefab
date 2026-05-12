@@ -290,12 +290,26 @@ MonoBehaviour:
   _interiorBlocksRoot: {fileID: 378822545636471837}
   _fallbackInteriorCubePrefab: {fileID: 0}
   _interiorSmallPrefabs:
-  - _prefab: {fileID: 3367844286714612241, guid: 26a866cda2b00fc47b4a245af02f482d, type: 3}
+  - _prefab: {fileID: 3367844286714612241, guid: f48d7c4dae6fa3a4aa0da99699d67e05, type: 3}
     _weight: 1
+    _spawnHeight: 1.75
+    _guaranteed: 0
+  - _prefab: {fileID: 3367844286714612241, guid: e85e37fbe5291d94eaa2c3876fc3daaf, type: 3}
+    _weight: 1
+    _spawnHeight: 1.75
     _guaranteed: 0
   _interiorLargePrefabs:
   - _prefab: {fileID: 3367844286714612241, guid: 4a758b2fd99128645a2d126bee6e3013, type: 3}
     _weight: 1
+    _spawnHeight: 1.75
+    _guaranteed: 0
+  - _prefab: {fileID: 3367844286714612241, guid: 0f72d3873d22ad440a5fd68fb00c91c7, type: 3}
+    _weight: 1
+    _spawnHeight: 1.75
+    _guaranteed: 0
+  - _prefab: {fileID: 3367844286714612241, guid: 087c99afad8ef3449892f612368249da, type: 3}
+    _weight: 1
+    _spawnHeight: 1.75
     _guaranteed: 0
   _blockSize: 1
   _spawnOnlyExposedSmallCubes: 1

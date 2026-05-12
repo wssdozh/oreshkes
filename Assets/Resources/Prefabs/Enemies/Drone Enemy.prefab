@@ -69,7 +69,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.5, y: 0.5, z: 0.5}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 1
   m_Children:
   - {fileID: 170424309483600535}
@@ -135,7 +135,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e7a648ce4d182484d96ff89c2aa12a37, type: 3}
-  m_Name: ''
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TargetVision
   _origin: {fileID: 170424309483600535}
   _currentTarget: {fileID: 0}
@@ -158,7 +158,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 6d935589debb0f4478ac73232b6a526a, type: 3}
-  m_Name: ''
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Health
   _minValue: 0
   _maxValue: 20
@@ -166,6 +166,7 @@ MonoBehaviour:
   _autoRegen: 0
   _regenPerSecond: 2
   _regenDelay: 3
+  _regenTick: 0.1
 --- !u!114 &8623145794061254301
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -176,10 +177,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 64f4d7faa1488074e9d4a320c33b66d4, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Enemy
   _health: {fileID: 6483522750506240681}
   _characterDied: {fileID: 0}
+  _sinkDelay: 5.2
+  _sinkDuration: 6.5
+  _sinkDistance: 2.2
 --- !u!114 &8623145794061254302
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -206,6 +210,9 @@ MonoBehaviour:
   _hoverSpeed: 1.25
   _ceilingGap: 1.15
   _floorGap: 2.35
+  _combatFloorGap: 1.1
+  _heightReturnSpeed: 4.8
+  _heightReturnThreshold: 0.2
   _obstacleMask:
     serializedVersion: 2
     m_Bits: 385
@@ -260,7 +267,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b91c0a8e6f4e4b1b9dc0f8579aa87132, type: 3}
-  m_Name: ''
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CurrencyDropOnDeath
   _health: {fileID: 6483522750506240681}
   _pickupPrefab: {fileID: 1864531296725922894, guid: c2a6d4f5e8b54755a0e34bd1f9c2a441, type: 3}
@@ -274,6 +281,24 @@ MonoBehaviour:
   _forceYMax: 4.4
   _forceZMin: -1.4
   _forceZMax: 1.4
+--- !u!114 &8623145794061254305
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 625229030526185096}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 56ba49f4d8bc45a8a9214ba34d2e7b2f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyDroneCrash
+  _moveRoot: {fileID: 8438972018461338632}
+  _rigidbody: {fileID: 8623145794061254304}
+  _force: 2.2
+  _up: 0.12
+  _back: 0.32
+  _down: 0.06
 --- !u!82 &913500000000000001
 AudioSource:
   m_ObjectHideFlags: 0
@@ -381,7 +406,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7e8dd5b115c0426b9bde45017e91ab5a, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RangedFireAudio
   _audioSource: {fileID: 913500000000000001}
   _fireExecutor: {fileID: 0}
@@ -399,7 +424,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d3b86279fcd54ef9a9556e3061c6a39c, type: 3}
-  m_Name: ''
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HealthAudio
   _audioSource: {fileID: 913500000000000001}
   _health: {fileID: 6483522750506240681}
@@ -409,24 +434,6 @@ MonoBehaviour:
   _endedClips: []
   _damagedVolumeScale: 0.28
   _endedVolumeScale: 0
---- !u!114 &8623145794061254305
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 625229030526185096}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 56ba49f4d8bc45a8a9214ba34d2e7b2f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::EnemyDroneCrash
-  _moveRoot: {fileID: 8438972018461338632}
-  _rigidbody: {fileID: 8623145794061254304}
-  _force: 2.2
-  _up: 0.12
-  _back: 0.32
-  _down: 0.06
 --- !u!1 &923085245212562737
 GameObject:
   m_ObjectHideFlags: 0
@@ -458,7 +465,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.36, y: 0.44, z: 0.56}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 5363890313950826456}
@@ -471,7 +478,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 923085245212562737}
-  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+  m_Mesh: {fileID: -8251302285044789390, guid: 57c31a6f60bd42b44b9e6e08de17cf1e, type: 3}
 --- !u!23 &1977753370855910669
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -480,7 +487,7 @@ MeshRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 923085245212562737}
   m_Enabled: 1
-  m_CastShadows: 1
+  m_CastShadows: 2
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
   m_StaticShadowCaster: 0
@@ -497,7 +504,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 35214cbfca3e2d54b8736bdd9bb23958, type: 2}
+  - {fileID: 2100000, guid: 451bf1c2d0edfeb4b9f5703ea5eda7a4, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -569,6 +576,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 449
   _maxAimAngleDegrees: 30
+  _readyAngleDegrees: 8
   _muzzle: {fileID: 5363890313950826456}
   _bulletPrefab: {fileID: 4344111331149057464, guid: 13bda12239d3d1d4a9c7ec696a064ee0, type: 3}
   _minDamage: 3

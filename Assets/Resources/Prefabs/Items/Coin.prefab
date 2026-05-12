@@ -97,10 +97,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 694d5fad65b30624fa917b1afa7840a3, type: 3}
-  m_Name: ''
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PickupAnimator
   _moveSpeed: 5
   _stopDistance: 0.2
+  _minDuration: 0.12
+  _arcHeight: 0.25
 --- !u!114 &1864531296725922894
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -111,7 +113,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a0d3e2f9473b47a7a1bde3f4c8c58a11, type: 3}
-  m_Name: ''
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CurrencyPickup
   _item: {fileID: 0}
   _amount: 1
@@ -130,7 +132,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b404b03dd8d845d43885421b7f9fbd8b, type: 3}
-  m_Name: ''
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PickupReturner
   _pickup: {fileID: 1864531296725922894}
 --- !u!82 &915100000000000001
@@ -240,7 +242,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b6111d4f22dc4a49a87e2fb95d98a2b7, type: 3}
-  m_Name: ''
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PickupAudio
   _audioSource: {fileID: 915100000000000001}
   _pickup: {fileID: 1864531296725922894}
@@ -263,11 +265,15 @@ PrefabInstance:
     - target: {fileID: 1603587205924931784, guid: ab23f9454227b8f458127b12b178c037, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: d3f5a7b9c1e2456ab8d34e5f6a7b8c92, type: 2}
+      objectReference: {fileID: 2100000, guid: 451bf1c2d0edfeb4b9f5703ea5eda7a4, type: 2}
     - target: {fileID: 1816165582074982046, guid: ab23f9454227b8f458127b12b178c037, type: 3}
       propertyPath: m_Intensity
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 1835841380096877377, guid: ab23f9454227b8f458127b12b178c037, type: 3}
+      propertyPath: m_Mesh
+      value: 
+      objectReference: {fileID: 2159703810824169821, guid: 5af208b67b454d04e936a3f1a293cb42, type: 3}
     - target: {fileID: 3504792399234092092, guid: ab23f9454227b8f458127b12b178c037, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
@@ -335,3 +341,9 @@ MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 1232069811244846738, guid: ab23f9454227b8f458127b12b178c037, type: 3}
   m_PrefabInstance: {fileID: 5669329180580312587}
   m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9e646ca1523831846889b86600e4f3c8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PickupIdle
