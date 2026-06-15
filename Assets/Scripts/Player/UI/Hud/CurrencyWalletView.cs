@@ -42,6 +42,6 @@ public sealed class CurrencyWalletView : MonoBehaviour
 
     private void Refresh(int coins)
     {
-        _coinsText.text = "Coins " + coins.ToString();
+        _coinsText.text = coins.ToString();
     }
 }

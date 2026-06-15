@@ -42,6 +42,6 @@ public sealed class BerryWalletView : MonoBehaviour
 
     private void Refresh(int berries)
     {
-        _berriesText.text = "Berries " + berries.ToString();
+        _berriesText.text = berries.ToString();
     }
 }
