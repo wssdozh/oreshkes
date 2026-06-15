@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Item
   _id: 4
   _displayName: Rocket Launcher
-  _icon: {fileID: 21300040, guid: 7ab74e659e1f0a34d9cfec21c478fc12, type: 3}
+  _icon: {fileID: 21300000, guid: 06ffe699f9384dc0b7f0bf1454e272c4, type: 3}
   _isStackable: 0
   _maxStack: 1
   _weaponType: 1

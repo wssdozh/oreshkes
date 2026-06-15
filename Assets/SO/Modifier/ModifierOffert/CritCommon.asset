@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: CritCommon
   m_EditorClassIdentifier: Assembly-CSharp::ModifierOffer
   _title: ""
-  _icon: {fileID: 0}
+  _icon: {fileID: 21300000, guid: bc62d6293e2541f793eefad88679072d, type: 3}
   _requiredItem: {fileID: 0}
   _rarity: 0
   _price: 25

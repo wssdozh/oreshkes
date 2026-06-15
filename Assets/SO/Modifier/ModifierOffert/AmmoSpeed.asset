@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: AmmoSpeed
   m_EditorClassIdentifier: Assembly-CSharp::ModifierOffer
   _title: "\u0421\u043A\u043E\u0440\u043E\u0441\u0442\u044C \u043F\u0443\u043B\u0438"
-  _icon: {fileID: 0}
+  _icon: {fileID: 21300000, guid: e26ece5878fa4992a8c2f915adabba1e, type: 3}
   _requiredItem: {fileID: 0}
   _rarity: 0
   _price: 10
