@@ -13939,7 +13939,6 @@ MonoBehaviour:
   _header: {fileID: 1263907316}
   _resetButton: {fileID: 1999018293}
   _backButton: {fileID: 0}
-  _panelColor: {r: 0.13725491, g: 0.14117648, b: 0.13725491, a: 1}
 --- !u!114 &2087987354
 MonoBehaviour:
   m_ObjectHideFlags: 0

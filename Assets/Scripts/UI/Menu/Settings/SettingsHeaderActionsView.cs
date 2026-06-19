@@ -15,7 +15,6 @@ public sealed class SettingsHeaderActionsView : MonoBehaviour
     [SerializeField] private RectTransform _header;
     [SerializeField] private Button _resetButton;
     [SerializeField] private Button _backButton;
-    [SerializeField] private Color _panelColor = new Color32(0x23, 0x24, 0x23, 0xFF);
 
     private ScrollRect _scrollRect;
     private float _headerHeight;
@@ -63,8 +62,6 @@ public sealed class SettingsHeaderActionsView : MonoBehaviour
         {
             throw new MissingComponentException(nameof(Image));
         }
-
-        panelImage.color = _panelColor;
 
         Image headerImage = _header.GetComponent<Image>();
 
