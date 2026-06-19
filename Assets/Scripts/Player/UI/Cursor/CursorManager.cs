@@ -5,9 +5,6 @@ public class CursorManager : MonoBehaviour
 {
     private const int HitBufferSize = 32;
     private const float HitDistance = 100f;
-    private const float DefaultSurfaceLuminance = 0f;
-
-    private static readonly int s_colorPropertyId = Shader.PropertyToID("_Color");
 
     [Header("Зависимости")]
     [SerializeField] private Camera _camera;
@@ -26,7 +23,6 @@ public class CursorManager : MonoBehaviour
     public Vector3 MouseHitPos { get; private set; }
     public bool HasHit { get; private set; }
     public bool HasDamageableHit { get; private set; }
-    public Color HitSurfaceColor { get; private set; } = Color.black;
 
     public Vector2 MouseScreenPos => _mouseScreenPos;
 
@@ -221,7 +217,6 @@ public class CursorManager : MonoBehaviour
 
         _currentHitCollider = collider;
         HasDamageableHit = IsDamageableCollider(collider);
-        HitSurfaceColor = GetSurfaceColor(collider);
     }
 
     private void ClearHitCollider()
@@ -233,7 +228,6 @@ public class CursorManager : MonoBehaviour
 
         _currentHitCollider = null;
         HasDamageableHit = false;
-        HitSurfaceColor = new Color(DefaultSurfaceLuminance, DefaultSurfaceLuminance, DefaultSurfaceLuminance, 1f);
     }
 
     private bool IsDamageableCollider(Collider collider)
@@ -272,42 +266,6 @@ public class CursorManager : MonoBehaviour
         }
 
         return health.Value > health.MinValue;
-    }
-
-    private Color GetSurfaceColor(Collider collider)
-    {
-        if (collider == null)
-        {
-            return new Color(DefaultSurfaceLuminance, DefaultSurfaceLuminance, DefaultSurfaceLuminance, 1f);
-        }
-
-        SpriteRenderer spriteRenderer = collider.GetComponentInParent<SpriteRenderer>();
-
-        if (spriteRenderer != null)
-        {
-            return spriteRenderer.color;
-        }
-
-        Renderer renderer = collider.GetComponentInParent<Renderer>();
-
-        if (renderer == null)
-        {
-            return new Color(DefaultSurfaceLuminance, DefaultSurfaceLuminance, DefaultSurfaceLuminance, 1f);
-        }
-
-        Material material = renderer.sharedMaterial;
-
-        if (material == null)
-        {
-            return new Color(DefaultSurfaceLuminance, DefaultSurfaceLuminance, DefaultSurfaceLuminance, 1f);
-        }
-
-        if (material.HasProperty(s_colorPropertyId) == false)
-        {
-            return new Color(DefaultSurfaceLuminance, DefaultSurfaceLuminance, DefaultSurfaceLuminance, 1f);
-        }
-
-        return material.GetColor(s_colorPropertyId);
     }
 
     private Vector3 GetAimPoint(Collider collider, RaycastHit hitInfo)

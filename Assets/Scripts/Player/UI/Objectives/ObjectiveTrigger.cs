@@ -7,5 +7,7 @@ public enum ObjectiveTrigger
     ExitRoom = 4,
     Purchase = 5,
     RoomCleared = 6,
-    BossDefeated = 7
+    BossDefeated = 7,
+    EnemyTypeCleared = 8,
+    BossPhaseReached = 9
 }

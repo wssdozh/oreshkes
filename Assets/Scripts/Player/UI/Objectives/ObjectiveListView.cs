@@ -50,6 +50,7 @@ public sealed class ObjectiveListView : MonoBehaviour
     private ContentSizeFitter _contentSizeFitter;
     private Button _itemTemplate;
     private ObjectiveProfile _currentProfile;
+    private string _currentTitle;
     private ObjectiveItemView _titleItem;
     private ObjectiveItemClickHandler _titleClickHandler;
     private Sequence _sequence;
@@ -75,6 +76,7 @@ public sealed class ObjectiveListView : MonoBehaviour
 
     public void Render(
         ObjectiveProfile profile,
+        string title,
         IReadOnlyList<ObjectiveStepViewData> steps,
         IReadOnlyCollection<int> completedStepIndices)
     {
@@ -100,12 +102,14 @@ public sealed class ObjectiveListView : MonoBehaviour
             throw new InvalidOperationException(nameof(completedStepIndices));
         }
 
-        if (_root.gameObject.activeSelf == false || _currentProfile != profile || HasStepChanges(steps))
+        if (_root.gameObject.activeSelf == false || _currentProfile != profile || HasStepStructureChanges(steps))
         {
-            ReplaceProfile(profile, steps, completedStepIndices);
+            ReplaceProfile(profile, title, steps, completedStepIndices);
 
             return;
         }
+
+        UpdateContent(title, steps);
 
         if (HasCompletedStepChanges(completedStepIndices) == false)
         {
@@ -175,6 +179,7 @@ public sealed class ObjectiveListView : MonoBehaviour
 
     private void ReplaceProfile(
         ObjectiveProfile profile,
+        string title,
         IReadOnlyList<ObjectiveStepViewData> steps,
         IReadOnlyCollection<int> completedStepIndices)
     {
@@ -182,7 +187,7 @@ public sealed class ObjectiveListView : MonoBehaviour
 
         if (_items.Count == 0 || _root.gameObject.activeSelf == false)
         {
-            RenderInitial(profile, steps, completedStepIndices);
+            RenderInitial(profile, title, steps, completedStepIndices);
 
             return;
         }
@@ -196,11 +201,12 @@ public sealed class ObjectiveListView : MonoBehaviour
         }
 
         _sequence.AppendInterval(ReplaceDelay);
-        _sequence.OnComplete(() => RenderInitial(profile, steps, completedStepIndices));
+        _sequence.OnComplete(() => RenderInitial(profile, title, steps, completedStepIndices));
     }
 
     private void RenderInitial(
         ObjectiveProfile profile,
+        string title,
         IReadOnlyList<ObjectiveStepViewData> steps,
         IReadOnlyCollection<int> completedStepIndices)
     {
@@ -208,6 +214,7 @@ public sealed class ObjectiveListView : MonoBehaviour
         ClearItems();
 
         _currentProfile = profile;
+        _currentTitle = title;
         _areStepsCollapsed = false;
         CopySteps(steps);
         CopyCompletedSteps(completedStepIndices);
@@ -215,7 +222,7 @@ public sealed class ObjectiveListView : MonoBehaviour
 
         _titleItem = CreateItem(
             TitleName,
-            profile.Title,
+            title,
             string.Empty,
             RootWidth,
             TitleHeight,
@@ -394,7 +401,7 @@ public sealed class ObjectiveListView : MonoBehaviour
 
     private void AnimateProgress(IReadOnlyCollection<int> completedStepIndices)
     {
-        KillSequence(false);
+        KillSequence(true);
 
         List<int> newCompletedStepIndices = GetNewCompletedStepIndices(completedStepIndices);
         Dictionary<ObjectiveItemView, Vector2> startPositions = CapturePositions();
@@ -553,6 +560,7 @@ public sealed class ObjectiveListView : MonoBehaviour
         _titleItem = null;
         _titleClickHandler = null;
         _currentProfile = null;
+        _currentTitle = null;
         _completedStepIndices.Clear();
         _areStepsCollapsed = false;
     }
@@ -595,7 +603,7 @@ public sealed class ObjectiveListView : MonoBehaviour
         return canvasGroup;
     }
 
-    private bool HasStepChanges(IReadOnlyList<ObjectiveStepViewData> steps)
+    private bool HasStepStructureChanges(IReadOnlyList<ObjectiveStepViewData> steps)
     {
         if (_currentSteps.Count != steps.Count)
         {
@@ -607,18 +615,43 @@ public sealed class ObjectiveListView : MonoBehaviour
             ObjectiveStepViewData currentStep = _currentSteps[stepIndex];
             ObjectiveStepViewData nextStep = steps[stepIndex];
 
-            if (currentStep.Text != nextStep.Text)
+            if (string.IsNullOrWhiteSpace(currentStep.Text) != string.IsNullOrWhiteSpace(nextStep.Text))
             {
                 return true;
             }
 
-            if (currentStep.Description != nextStep.Description)
+            if (string.IsNullOrWhiteSpace(currentStep.Description) != string.IsNullOrWhiteSpace(nextStep.Description))
             {
                 return true;
             }
         }
 
         return false;
+    }
+
+    private void UpdateContent(string title, IReadOnlyList<ObjectiveStepViewData> steps)
+    {
+        if (_currentTitle != title)
+        {
+            _currentTitle = title;
+            _titleItem.SetText(title);
+        }
+
+        for (int stepIndex = 0; stepIndex < steps.Count; stepIndex++)
+        {
+            ObjectiveStepViewData step = steps[stepIndex];
+
+            if (_stepItems.ContainsKey(stepIndex) == false)
+            {
+                continue;
+            }
+
+            ObjectiveItemView item = _stepItems[stepIndex];
+            item.SetText(step.Text);
+            item.SetDescription(step.Description);
+        }
+
+        CopySteps(steps);
     }
 
     private bool HasCompletedStepChanges(IReadOnlyCollection<int> completedStepIndices)
@@ -887,6 +920,16 @@ public sealed class ObjectiveListView : MonoBehaviour
             }
 
             Image.raycastTarget = isEnabled;
+        }
+
+        public void SetText(string text)
+        {
+            Text.text = text;
+        }
+
+        public void SetDescription(string description)
+        {
+            DescriptionText.text = description;
         }
 
         public void SetListVisible(bool isVisible, float duration, float hiddenScale)

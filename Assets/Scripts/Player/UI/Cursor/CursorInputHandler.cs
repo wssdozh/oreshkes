@@ -12,6 +12,7 @@ public sealed class CursorInputHandler : MonoBehaviour
     private PlayerInputActions _inputs;
     private Coroutine _holdCoroutine;
     private WaitForSecondsRealtime _holdWait;
+    private Player _player;
 
     private bool _isAttackPressed;
     private bool _isHoldConfirmed;
@@ -22,6 +23,7 @@ public sealed class CursorInputHandler : MonoBehaviour
         PlayerInputBindingOverrideStore.Apply(_inputs);
         _holdWait = new WaitForSecondsRealtime(_holdThresholdSeconds);
         ResolveCursorManager();
+        ResolvePlayer();
     }
 
     private void OnEnable()
@@ -70,15 +72,16 @@ public sealed class CursorInputHandler : MonoBehaviour
     private void LateUpdate()
     {
         ResolveCursorManager();
+        ResolvePlayer();
 
         if (_cursorManager == null)
         {
-            _cursorAnimator.SetHoverVisual(false, Color.black);
+            _cursorAnimator.SetHoverVisual(IsPlayerInBattle());
 
             return;
         }
 
-        _cursorAnimator.SetHoverVisual(_cursorManager.HasDamageableHit, _cursorManager.HitSurfaceColor);
+        _cursorAnimator.SetHoverVisual(IsPlayerInBattle() || _cursorManager.HasDamageableHit);
     }
 
     private void OnAttackPerformed(InputAction.CallbackContext callbackContext)
@@ -178,5 +181,25 @@ public sealed class CursorInputHandler : MonoBehaviour
         }
 
         _cursorManager = CursorManager.Instance;
+    }
+
+    private void ResolvePlayer()
+    {
+        if (_player != null)
+        {
+            return;
+        }
+
+        _player = Player.Instance;
+    }
+
+    private bool IsPlayerInBattle()
+    {
+        if (_player == null)
+        {
+            return false;
+        }
+
+        return _player.IsInBattle;
     }
 }

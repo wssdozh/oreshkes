@@ -9,19 +9,14 @@ public sealed class CursorAnimator : MonoBehaviour
 {
     private const string DefaultCursorResourcePath = "Textures/Cursor/crosshair_default";
     private const string DamageableCursorResourcePath = "Textures/Cursor/crosshair_damageable";
-    private const float ColorCompareThreshold = 0.015f;
-    private const float LuminanceRedWeight = 0.2126f;
-    private const float LuminanceGreenWeight = 0.7152f;
-    private const float LuminanceBlueWeight = 0.0722f;
+    private const string TransitionImageName = "CursorTransitionImage";
 
     [Header("Visual")]
     [SerializeField] private RectTransform _visualRectTransform;
     [SerializeField] private Image _cursorImage;
     [SerializeField] private bool _useUnscaledTime = true;
-    [SerializeField] private float _spriteTransitionDuration = 0.14f;
-    [SerializeField] private float _colorTransitionDuration = 0.12f;
-    [SerializeField] private Color _lightCursorColor = Color.white;
-    [SerializeField] private Color _darkCursorColor = new Color(0.08f, 0.08f, 0.08f, 1f);
+    [SerializeField] private float _spriteTransitionDuration = 0.24f;
+    [SerializeField] private Color _cursorColor = Color.white;
 
     [Header("Click")]
     [SerializeField] private float _clickDownScale = 0.85f;
@@ -61,11 +56,10 @@ public sealed class CursorAnimator : MonoBehaviour
     private Tween _secondaryClickTween;
     private Tween _scrollTween;
     private Tween _spriteTransitionTween;
-    private Tween _colorTween;
+    private Image _transitionImage;
     private Sprite _defaultCursorSprite;
     private Sprite _damageableCursorSprite;
     private Sprite _currentCursorSprite;
-    private Color _currentCursorColor;
 
     private bool _isHeld;
 
@@ -87,13 +81,14 @@ public sealed class CursorAnimator : MonoBehaviour
         }
 
         LoadCursorSprites();
+        CreateTransitionImage();
         _baseScale = _visualRectTransform.localScale;
         _baseAnchoredPosition = _visualRectTransform.anchoredPosition;
         _baseLocalEulerAngles = _visualRectTransform.localEulerAngles;
         _currentCursorSprite = _defaultCursorSprite;
-        _currentCursorColor = _lightCursorColor;
         _cursorImage.sprite = _currentCursorSprite;
-        _cursorImage.color = _currentCursorColor;
+        _cursorImage.color = _cursorColor;
+        HideTransitionImage();
     }
 
     private void OnDisable()
@@ -267,29 +262,14 @@ public sealed class CursorAnimator : MonoBehaviour
             .OnComplete(ResetScaleToBase);
     }
 
-    public void SetHoverVisual(bool hasDamageableTarget, Color surfaceColor)
+    public void SetHoverVisual(bool hasDamageableTarget)
     {
         Sprite targetSprite = hasDamageableTarget ? _damageableCursorSprite : _defaultCursorSprite;
-        Color targetColor = GetContrastColor(surfaceColor);
 
         if (_currentCursorSprite != targetSprite)
         {
-            PlaySpriteTransition(targetSprite, targetColor);
-
-            return;
+            PlaySpriteTransition(targetSprite);
         }
-
-        if (IsSameColor(_currentCursorColor, targetColor))
-        {
-            return;
-        }
-
-        _currentCursorColor = targetColor;
-        KillTween(_colorTween);
-        _colorTween = _cursorImage
-            .DOColor(targetColor, _colorTransitionDuration)
-            .SetEase(Ease.OutQuad)
-            .SetUpdate(_useUnscaledTime);
     }
 
     private void ResetScaleToBase()
@@ -302,6 +282,9 @@ public sealed class CursorAnimator : MonoBehaviour
         _visualRectTransform.localScale = _baseScale;
         _visualRectTransform.anchoredPosition = _baseAnchoredPosition;
         _visualRectTransform.localEulerAngles = _baseLocalEulerAngles;
+        _cursorImage.sprite = _currentCursorSprite;
+        _cursorImage.color = _cursorColor;
+        HideTransitionImage();
     }
 
     private void KillAllTweens()
@@ -313,7 +296,6 @@ public sealed class CursorAnimator : MonoBehaviour
         KillTween(_secondaryClickTween);
         KillTween(_scrollTween);
         KillTween(_spriteTransitionTween);
-        KillTween(_colorTween);
     }
 
     private void KillHoldJitterTweens()
@@ -351,55 +333,84 @@ public sealed class CursorAnimator : MonoBehaviour
         }
     }
 
-    private Color GetContrastColor(Color surfaceColor)
+    private void CreateTransitionImage()
     {
-        float luminance = (surfaceColor.r * LuminanceRedWeight)
-            + (surfaceColor.g * LuminanceGreenWeight)
-            + (surfaceColor.b * LuminanceBlueWeight);
-        float contrastFactor = Mathf.Clamp01(luminance);
-        Color contrastColor = Color.Lerp(_lightCursorColor, _darkCursorColor, contrastFactor);
-        contrastColor.a = _lightCursorColor.a;
+        GameObject transitionObject = new GameObject(
+            TransitionImageName,
+            typeof(RectTransform),
+            typeof(CanvasRenderer),
+            typeof(Image));
+        transitionObject.transform.SetParent(_visualRectTransform, false);
 
-        return contrastColor;
+        RectTransform transitionTransform = transitionObject.GetComponent<RectTransform>();
+        transitionTransform.anchorMin = Vector2.zero;
+        transitionTransform.anchorMax = Vector2.one;
+        transitionTransform.offsetMin = Vector2.zero;
+        transitionTransform.offsetMax = Vector2.zero;
+        transitionTransform.pivot = new Vector2(0.5f, 0.5f);
+        transitionTransform.localScale = Vector3.one;
+
+        _transitionImage = transitionObject.GetComponent<Image>();
+        _transitionImage.raycastTarget = false;
+        _transitionImage.maskable = _cursorImage.maskable;
+        _transitionImage.preserveAspect = _cursorImage.preserveAspect;
+        _transitionImage.type = _cursorImage.type;
+        _transitionImage.fillMethod = _cursorImage.fillMethod;
+        _transitionImage.fillOrigin = _cursorImage.fillOrigin;
+        _transitionImage.fillClockwise = _cursorImage.fillClockwise;
+        _transitionImage.fillAmount = _cursorImage.fillAmount;
     }
 
-    private void PlaySpriteTransition(Sprite targetSprite, Color targetColor)
+    private void PlaySpriteTransition(Sprite targetSprite)
     {
-        _currentCursorSprite = targetSprite;
-        _currentCursorColor = targetColor;
-
         KillTween(_spriteTransitionTween);
-        KillTween(_colorTween);
 
-        float halfDuration = _spriteTransitionDuration * 0.5f;
-        Color transparentColor = _cursorImage.color;
+        _currentCursorSprite = targetSprite;
+        SyncTransitionImage(targetSprite);
+
+        Color visibleColor = _cursorColor;
+        Color transparentColor = _cursorColor;
         transparentColor.a = 0f;
-        Color visibleTargetColor = targetColor;
-        visibleTargetColor.a = _lightCursorColor.a;
+        _cursorImage.color = visibleColor;
+        _transitionImage.color = transparentColor;
 
         Sequence transitionSequence = DOTween.Sequence();
         transitionSequence.SetUpdate(_useUnscaledTime);
-        transitionSequence.Append(_cursorImage.DOColor(transparentColor, halfDuration).SetEase(Ease.OutQuad));
-        transitionSequence.AppendCallback(() =>
-        {
-            _cursorImage.sprite = targetSprite;
-            _cursorImage.color = transparentColor;
-        });
-        transitionSequence.Append(_cursorImage.DOColor(visibleTargetColor, halfDuration).SetEase(Ease.OutQuad));
+        transitionSequence.Join(_cursorImage.DOFade(0f, _spriteTransitionDuration).SetEase(Ease.InOutSine));
+        transitionSequence.Join(_transitionImage
+            .DOFade(_cursorColor.a, _spriteTransitionDuration)
+            .SetEase(Ease.InOutSine));
+        transitionSequence.OnComplete(() => ApplyTransitionSprite(targetSprite));
 
         _spriteTransitionTween = transitionSequence;
     }
 
-    private bool IsSameColor(Color left, Color right)
+    private void SyncTransitionImage(Sprite targetSprite)
     {
-        float redDelta = Mathf.Abs(left.r - right.r);
-        float greenDelta = Mathf.Abs(left.g - right.g);
-        float blueDelta = Mathf.Abs(left.b - right.b);
-        float alphaDelta = Mathf.Abs(left.a - right.a);
+        _transitionImage.sprite = targetSprite;
+        _transitionImage.type = _cursorImage.type;
+        _transitionImage.fillMethod = _cursorImage.fillMethod;
+        _transitionImage.fillOrigin = _cursorImage.fillOrigin;
+        _transitionImage.fillClockwise = _cursorImage.fillClockwise;
+        _transitionImage.fillAmount = _cursorImage.fillAmount;
+    }
 
-        return redDelta <= ColorCompareThreshold
-            && greenDelta <= ColorCompareThreshold
-            && blueDelta <= ColorCompareThreshold
-            && alphaDelta <= ColorCompareThreshold;
+    private void ApplyTransitionSprite(Sprite targetSprite)
+    {
+        _cursorImage.sprite = targetSprite;
+        _cursorImage.color = _cursorColor;
+        HideTransitionImage();
+    }
+
+    private void HideTransitionImage()
+    {
+        if (_transitionImage == null)
+        {
+            return;
+        }
+
+        Color transparentColor = _cursorColor;
+        transparentColor.a = 0f;
+        _transitionImage.color = transparentColor;
     }
 }

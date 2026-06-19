@@ -28,6 +28,7 @@ namespace JunkyardBoss
         private BossExcavatorState _state;
 
         public static event Action<BossExcavator> AnyDied;
+        public static event Action<BossExcavator, BossExcavatorPhase> AnyPhaseChanged;
         public event Action<BossExcavatorAttack> AttackStarted;
         public event Action BucketImpacted;
         public event Action ScrapThrown;
@@ -399,6 +400,7 @@ namespace JunkyardBoss
             _phase = phase;
 
             PhaseChanged?.Invoke(previousPhase, _phase);
+            AnyPhaseChanged?.Invoke(this, _phase);
         }
 
         internal void NotifyAttackStarted(BossExcavatorAttack attack)

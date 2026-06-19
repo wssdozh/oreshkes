@@ -28,6 +28,7 @@ public class Player : MonoBehaviour
     public event Action ItemUseRequested;
     public event Action<Interactable> Interacted;
     public PlayerMovement Movement => _movement;
+    public bool IsInBattle => _combat.IsInBattle;
 
     private void Awake()
     {

@@ -23,6 +23,25 @@ public sealed class PlayerObjectiveTracker : MonoBehaviour
     private const string AttackKeyToken = "{AttackKey}";
     private const string InteractKeyToken = "{InteractKey}";
     private const string UseItemKeyToken = "{UseItemKey}";
+    private const string EnemyProgressToken = "{EnemyProgress}";
+    private const string MeleeLeftToken = "{MeleeLeft}";
+    private const string MeleeTotalToken = "{MeleeTotal}";
+    private const string BomberLeftToken = "{BomberLeft}";
+    private const string BomberTotalToken = "{BomberTotal}";
+    private const string DroneLeftToken = "{DroneLeft}";
+    private const string DroneTotalToken = "{DroneTotal}";
+    private const string TurretLeftToken = "{TurretLeft}";
+    private const string TurretTotalToken = "{TurretTotal}";
+    private const string BossPhaseToken = "{BossPhase}";
+    private const string EnemyTypeMelee = "melee";
+    private const string EnemyTypeBomber = "bomber";
+    private const string EnemyTypeDrone = "drone";
+    private const string EnemyTypeTurret = "turret";
+    private const string AllEnemiesDefeatedText = "все враги убиты";
+    private const string EnemyProgressText = "осталось {0}/{1}";
+    private const string BossPhaseOneText = "первая фаза";
+    private const string BossPhaseTwoText = "вторая фаза";
+    private const string BossPhaseThreeText = "третья фаза";
     private const string LeftMousePath = "<Mouse>/leftButton";
     private const string RightMousePath = "<Mouse>/rightButton";
     private const string MiddleMousePath = "<Mouse>/middleButton";
@@ -33,9 +52,12 @@ public sealed class PlayerObjectiveTracker : MonoBehaviour
 
     private readonly List<ObjectiveStepViewData> _stepViewData = new List<ObjectiveStepViewData>(8);
     private readonly HashSet<int> _completedStepIndices = new HashSet<int>();
+    private readonly EnemyObjectiveCounters _enemyCounters = new EnemyObjectiveCounters();
 
     private ObjectiveProfile[] _profiles;
     private ObjectiveProfile _currentProfile;
+    private RoomGenerator _currentRoomGenerator;
+    private BossExcavatorPhase _currentBossPhase;
     private ObjectiveListView _view;
     private Player _player;
     private PlayerInputActions _labelInputs;
@@ -81,7 +103,7 @@ public sealed class PlayerObjectiveTracker : MonoBehaviour
         _isInitialized = true;
 
         Subscribe();
-        ShowProfile(RoomType.Start);
+        ShowProfile(RoomType.Start, null);
     }
 
     private void OnEnable()
@@ -118,7 +140,10 @@ public sealed class PlayerObjectiveTracker : MonoBehaviour
         _player.Interacted += OnPlayerInteracted;
         ObjectiveTarget.Completed += OnObjectiveTargetCompleted;
         PlayerModifierPurchase.Purchased += OnPlayerModifierPurchased;
+        Enemy.AnyDied += OnEnemyDied;
+        Turret.AnyDied += OnTurretDied;
         RoomCombatLock.Cleared += OnRoomCleared;
+        BossExcavator.AnyPhaseChanged += OnBossPhaseChanged;
         BossExcavator.AnyDied += OnBossDied;
         RoomEnterTrigger.AnyEntered += OnRoomEntered;
         PlayerInputBindingOverrideStore.Changed += OnBindingOverridesChanged;
@@ -138,27 +163,34 @@ public sealed class PlayerObjectiveTracker : MonoBehaviour
         _player.Interacted -= OnPlayerInteracted;
         ObjectiveTarget.Completed -= OnObjectiveTargetCompleted;
         PlayerModifierPurchase.Purchased -= OnPlayerModifierPurchased;
+        Enemy.AnyDied -= OnEnemyDied;
+        Turret.AnyDied -= OnTurretDied;
         RoomCombatLock.Cleared -= OnRoomCleared;
+        BossExcavator.AnyPhaseChanged -= OnBossPhaseChanged;
         BossExcavator.AnyDied -= OnBossDied;
         RoomEnterTrigger.AnyEntered -= OnRoomEntered;
         PlayerInputBindingOverrideStore.Changed -= OnBindingOverridesChanged;
         _isSubscribed = false;
     }
 
-    private void ShowProfile(RoomType roomType)
+    private void ShowProfile(RoomType roomType, RoomGenerator roomGenerator)
     {
         ObjectiveProfile profile = FindProfile(roomType);
 
         if (profile == null)
         {
             _currentProfile = null;
+            _currentRoomGenerator = null;
             _view.Hide();
 
             return;
         }
 
         _currentProfile = profile;
+        _currentRoomGenerator = roomGenerator;
+        RefreshRuntimeState();
         _completedStepIndices.Clear();
+        CompleteAbsentEnemyTypeSteps();
         RenderProfile();
     }
 
@@ -247,6 +279,16 @@ public sealed class PlayerObjectiveTracker : MonoBehaviour
             return string.Equals(step.TargetId, targetId, StringComparison.Ordinal);
         }
 
+        if (trigger == ObjectiveTrigger.EnemyTypeCleared)
+        {
+            return string.Equals(step.TargetId, targetId, StringComparison.Ordinal);
+        }
+
+        if (trigger == ObjectiveTrigger.BossPhaseReached)
+        {
+            return string.Equals(step.TargetId, targetId, StringComparison.Ordinal);
+        }
+
         return true;
     }
 
@@ -259,7 +301,11 @@ public sealed class PlayerObjectiveTracker : MonoBehaviour
             return;
         }
 
-        _view.Render(_currentProfile, BuildStepViewData(_currentProfile), _completedStepIndices);
+        _view.Render(
+            _currentProfile,
+            FormatObjectiveText(_currentProfile.Title),
+            BuildStepViewData(_currentProfile),
+            _completedStepIndices);
     }
 
     private IReadOnlyList<ObjectiveStepViewData> BuildStepViewData(ObjectiveProfile profile)
@@ -276,6 +322,13 @@ public sealed class PlayerObjectiveTracker : MonoBehaviour
             ObjectiveStepDefinition step = profile.Steps[stepIndex];
 
             if (step == null)
+            {
+                _stepViewData.Add(new ObjectiveStepViewData(string.Empty, string.Empty));
+
+                continue;
+            }
+
+            if (ShouldShowStep(step) == false)
             {
                 _stepViewData.Add(new ObjectiveStepViewData(string.Empty, string.Empty));
 
@@ -301,7 +354,195 @@ public sealed class PlayerObjectiveTracker : MonoBehaviour
             .Replace(MoveKeysToken, GetMoveKeys())
             .Replace(AttackKeyToken, GetBindingDisplay(AttackActionName, string.Empty))
             .Replace(InteractKeyToken, GetBindingDisplay(InteractActionName, string.Empty))
-            .Replace(UseItemKeyToken, GetBindingDisplay(UseItemActionName, string.Empty));
+            .Replace(UseItemKeyToken, GetBindingDisplay(UseItemActionName, string.Empty))
+            .Replace(EnemyProgressToken, GetEnemyProgressText())
+            .Replace(MeleeLeftToken, _enemyCounters.MeleeLeft.ToString())
+            .Replace(MeleeTotalToken, _enemyCounters.MeleeTotal.ToString())
+            .Replace(BomberLeftToken, _enemyCounters.BomberLeft.ToString())
+            .Replace(BomberTotalToken, _enemyCounters.BomberTotal.ToString())
+            .Replace(DroneLeftToken, _enemyCounters.DroneLeft.ToString())
+            .Replace(DroneTotalToken, _enemyCounters.DroneTotal.ToString())
+            .Replace(TurretLeftToken, _enemyCounters.TurretLeft.ToString())
+            .Replace(TurretTotalToken, _enemyCounters.TurretTotal.ToString())
+            .Replace(BossPhaseToken, GetBossPhaseText());
+    }
+
+    private bool ShouldShowStep(ObjectiveStepDefinition step)
+    {
+        if (step.Trigger != ObjectiveTrigger.EnemyTypeCleared)
+        {
+            return true;
+        }
+
+        return GetEnemyTypeTotal(step.TargetId) > 0;
+    }
+
+    private string GetEnemyProgressText()
+    {
+        int total = _enemyCounters.Total;
+        int left = _enemyCounters.Left;
+
+        if (total <= 0)
+        {
+            return AllEnemiesDefeatedText;
+        }
+
+        if (left <= 0)
+        {
+            return AllEnemiesDefeatedText;
+        }
+
+        return string.Format(EnemyProgressText, left, total);
+    }
+
+    private string GetBossPhaseText()
+    {
+        if (_currentBossPhase == BossExcavatorPhase.PhaseTwo)
+        {
+            return BossPhaseTwoText;
+        }
+
+        if (_currentBossPhase == BossExcavatorPhase.PhaseThree)
+        {
+            return BossPhaseThreeText;
+        }
+
+        return BossPhaseOneText;
+    }
+
+    private int GetEnemyTypeTotal(string targetId)
+    {
+        if (targetId == EnemyTypeMelee)
+        {
+            return _enemyCounters.MeleeTotal;
+        }
+
+        if (targetId == EnemyTypeBomber)
+        {
+            return _enemyCounters.BomberTotal;
+        }
+
+        if (targetId == EnemyTypeDrone)
+        {
+            return _enemyCounters.DroneTotal;
+        }
+
+        if (targetId == EnemyTypeTurret)
+        {
+            return _enemyCounters.TurretTotal;
+        }
+
+        return 0;
+    }
+
+    private void RefreshRuntimeState()
+    {
+        _enemyCounters.Clear();
+        _currentBossPhase = BossExcavatorPhase.PhaseOne;
+
+        if (_currentRoomGenerator == null)
+        {
+            return;
+        }
+
+        RefreshEnemyCounters();
+        RefreshBossPhase();
+    }
+
+    private void RefreshEnemyCounters()
+    {
+        Enemy[] enemies = _currentRoomGenerator.GetComponentsInChildren<Enemy>(true);
+
+        for (int enemyIndex = 0; enemyIndex < enemies.Length; enemyIndex++)
+        {
+            Enemy enemy = enemies[enemyIndex];
+
+            if (enemy == null)
+            {
+                continue;
+            }
+
+            if (enemy.IsDead)
+            {
+                continue;
+            }
+
+            string enemyType = GetEnemyType(enemy);
+            _enemyCounters.Add(enemyType);
+        }
+
+        Turret[] turrets = _currentRoomGenerator.GetComponentsInChildren<Turret>(true);
+
+        for (int turretIndex = 0; turretIndex < turrets.Length; turretIndex++)
+        {
+            Turret turret = turrets[turretIndex];
+
+            if (turret == null)
+            {
+                continue;
+            }
+
+            if (turret.IsDead)
+            {
+                continue;
+            }
+
+            _enemyCounters.Add(EnemyTypeTurret);
+        }
+    }
+
+    private void RefreshBossPhase()
+    {
+        BossExcavator[] bosses = _currentRoomGenerator.GetComponentsInChildren<BossExcavator>(true);
+
+        for (int bossIndex = 0; bossIndex < bosses.Length; bossIndex++)
+        {
+            BossExcavator boss = bosses[bossIndex];
+
+            if (boss == null)
+            {
+                continue;
+            }
+
+            _currentBossPhase = boss.Phase;
+
+            return;
+        }
+    }
+
+    private void CompleteAbsentEnemyTypeSteps()
+    {
+        if (_currentProfile == null)
+        {
+            return;
+        }
+
+        if (_currentProfile.Steps == null)
+        {
+            return;
+        }
+
+        for (int stepIndex = 0; stepIndex < _currentProfile.Steps.Count; stepIndex++)
+        {
+            ObjectiveStepDefinition step = _currentProfile.Steps[stepIndex];
+
+            if (step == null)
+            {
+                continue;
+            }
+
+            if (step.Trigger != ObjectiveTrigger.EnemyTypeCleared)
+            {
+                continue;
+            }
+
+            if (GetEnemyTypeTotal(step.TargetId) > 0)
+            {
+                continue;
+            }
+
+            _completedStepIndices.Add(stepIndex);
+        }
     }
 
     private string GetMoveKeys()
@@ -456,6 +697,45 @@ public sealed class PlayerObjectiveTracker : MonoBehaviour
         TryCompleteSteps(ObjectiveTrigger.Purchase, targetId);
     }
 
+    private void OnEnemyDied(Enemy enemy)
+    {
+        if (IsCurrentRoom(enemy) == false)
+        {
+            return;
+        }
+
+        string enemyType = GetEnemyType(enemy);
+        _enemyCounters.Remove(enemyType);
+
+        if (_enemyCounters.GetLeft(enemyType) <= 0)
+        {
+            TryCompleteSteps(ObjectiveTrigger.EnemyTypeCleared, enemyType);
+
+            return;
+        }
+
+        RenderProfile();
+    }
+
+    private void OnTurretDied(Turret turret)
+    {
+        if (IsCurrentRoom(turret) == false)
+        {
+            return;
+        }
+
+        _enemyCounters.Remove(EnemyTypeTurret);
+
+        if (_enemyCounters.TurretLeft <= 0)
+        {
+            TryCompleteSteps(ObjectiveTrigger.EnemyTypeCleared, EnemyTypeTurret);
+
+            return;
+        }
+
+        RenderProfile();
+    }
+
     private void OnRoomCleared(RoomCombatLock roomCombatLock)
     {
         if (IsCurrentRoom(roomCombatLock) == false)
@@ -464,6 +744,17 @@ public sealed class PlayerObjectiveTracker : MonoBehaviour
         }
 
         TryCompleteSteps(ObjectiveTrigger.RoomCleared, string.Empty);
+    }
+
+    private void OnBossPhaseChanged(BossExcavator boss, BossExcavatorPhase phase)
+    {
+        if (IsCurrentRoom(boss) == false)
+        {
+            return;
+        }
+
+        _currentBossPhase = phase;
+        TryCompleteSteps(ObjectiveTrigger.BossPhaseReached, phase.ToString());
     }
 
     private void OnBossDied(BossExcavator boss)
@@ -503,12 +794,36 @@ public sealed class PlayerObjectiveTracker : MonoBehaviour
             return;
         }
 
-        if (_currentProfile != null && _currentProfile.RoomType == roomType)
+        if (_currentRoomGenerator == roomGenerator)
         {
             return;
         }
 
-        ShowProfile(roomType);
+        ShowProfile(roomType, roomGenerator);
+    }
+
+    private string GetEnemyType(Enemy enemy)
+    {
+        if (enemy == null)
+        {
+            return EnemyTypeMelee;
+        }
+
+        EnemyDroneBrain droneBrain = enemy.GetComponentInChildren<EnemyDroneBrain>(true);
+
+        if (droneBrain != null)
+        {
+            return EnemyTypeDrone;
+        }
+
+        EnemySuicideAttack suicideAttack = enemy.GetComponentInChildren<EnemySuicideAttack>(true);
+
+        if (suicideAttack != null)
+        {
+            return EnemyTypeBomber;
+        }
+
+        return EnemyTypeMelee;
     }
 
     private bool IsCurrentRoom(Component component)
@@ -530,11 +845,130 @@ public sealed class PlayerObjectiveTracker : MonoBehaviour
             return false;
         }
 
+        if (_currentRoomGenerator != null)
+        {
+            return _currentRoomGenerator == roomGenerator;
+        }
+
         if (roomGenerator.TryGetRoomType(out RoomType roomType) == false)
         {
             return false;
         }
 
         return _currentProfile.RoomType == roomType;
+    }
+
+    private sealed class EnemyObjectiveCounters
+    {
+        public int MeleeTotal { get; private set; }
+        public int MeleeLeft { get; private set; }
+        public int BomberTotal { get; private set; }
+        public int BomberLeft { get; private set; }
+        public int DroneTotal { get; private set; }
+        public int DroneLeft { get; private set; }
+        public int TurretTotal { get; private set; }
+        public int TurretLeft { get; private set; }
+
+        public int Total => MeleeTotal + BomberTotal + DroneTotal + TurretTotal;
+        public int Left => MeleeLeft + BomberLeft + DroneLeft + TurretLeft;
+
+        public void Clear()
+        {
+            MeleeTotal = 0;
+            MeleeLeft = 0;
+            BomberTotal = 0;
+            BomberLeft = 0;
+            DroneTotal = 0;
+            DroneLeft = 0;
+            TurretTotal = 0;
+            TurretLeft = 0;
+        }
+
+        public void Add(string enemyType)
+        {
+            if (enemyType == EnemyTypeMelee)
+            {
+                MeleeTotal += 1;
+                MeleeLeft += 1;
+
+                return;
+            }
+
+            if (enemyType == EnemyTypeBomber)
+            {
+                BomberTotal += 1;
+                BomberLeft += 1;
+
+                return;
+            }
+
+            if (enemyType == EnemyTypeDrone)
+            {
+                DroneTotal += 1;
+                DroneLeft += 1;
+
+                return;
+            }
+
+            if (enemyType == EnemyTypeTurret)
+            {
+                TurretTotal += 1;
+                TurretLeft += 1;
+            }
+        }
+
+        public void Remove(string enemyType)
+        {
+            if (enemyType == EnemyTypeMelee)
+            {
+                MeleeLeft = Mathf.Max(0, MeleeLeft - 1);
+
+                return;
+            }
+
+            if (enemyType == EnemyTypeBomber)
+            {
+                BomberLeft = Mathf.Max(0, BomberLeft - 1);
+
+                return;
+            }
+
+            if (enemyType == EnemyTypeDrone)
+            {
+                DroneLeft = Mathf.Max(0, DroneLeft - 1);
+
+                return;
+            }
+
+            if (enemyType == EnemyTypeTurret)
+            {
+                TurretLeft = Mathf.Max(0, TurretLeft - 1);
+            }
+        }
+
+        public int GetLeft(string enemyType)
+        {
+            if (enemyType == EnemyTypeMelee)
+            {
+                return MeleeLeft;
+            }
+
+            if (enemyType == EnemyTypeBomber)
+            {
+                return BomberLeft;
+            }
+
+            if (enemyType == EnemyTypeDrone)
+            {
+                return DroneLeft;
+            }
+
+            if (enemyType == EnemyTypeTurret)
+            {
+                return TurretLeft;
+            }
+
+            return 0;
+        }
     }
 }
