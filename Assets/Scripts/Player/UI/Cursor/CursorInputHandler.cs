@@ -18,11 +18,14 @@ public sealed class CursorInputHandler : MonoBehaviour
     private void Awake()
     {
         _inputs = new PlayerInputActions();
+        PlayerInputBindingOverrideStore.Apply(_inputs);
         _holdWait = new WaitForSecondsRealtime(_holdThresholdSeconds);
     }
 
     private void OnEnable()
     {
+        PlayerInputBindingOverrideStore.Changed += OnBindingOverridesChanged;
+        PlayerInputBindingOverrideStore.Apply(_inputs);
         _inputs.Enable();
 
         _inputs.Player.Attack.performed += OnAttackPerformed;
@@ -34,6 +37,8 @@ public sealed class CursorInputHandler : MonoBehaviour
 
     private void OnDisable()
     {
+        PlayerInputBindingOverrideStore.Changed -= OnBindingOverridesChanged;
+
         _inputs.Player.Attack.performed -= OnAttackPerformed;
         _inputs.Player.Attack.canceled -= OnAttackCanceled;
 
@@ -140,5 +145,12 @@ public sealed class CursorInputHandler : MonoBehaviour
 
         StopCoroutine(_holdCoroutine);
         _holdCoroutine = null;
+    }
+
+    private void OnBindingOverridesChanged()
+    {
+        _inputs.Disable();
+        PlayerInputBindingOverrideStore.Apply(_inputs);
+        _inputs.Enable();
     }
 }

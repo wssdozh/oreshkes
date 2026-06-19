@@ -44,6 +44,7 @@ public class Player : MonoBehaviour
         }
 
         _inputs = new PlayerInputActions();
+        PlayerInputBindingOverrideStore.Apply(_inputs);
         _bossHealthOverlay = gameObject.AddComponent<BossHealthOverlay>();
         _bossHealthOverlay.Initialize(_uiCanvas, _bossHealthIndicatorTemplate);
         _remainingEnemyOverlay = gameObject.AddComponent<RemainingEnemyOverlay>();
@@ -53,12 +54,15 @@ public class Player : MonoBehaviour
 
     private void OnEnable()
     {
+        PlayerInputBindingOverrideStore.Changed += OnBindingOverridesChanged;
+        PlayerInputBindingOverrideStore.Apply(_inputs);
         _inputs.Enable();
         _health.Ended += Die;
     }
 
     private void OnDisable()
     {
+        PlayerInputBindingOverrideStore.Changed -= OnBindingOverridesChanged;
         _inputs.Disable();
         _health.Ended -= Die;
     }
@@ -240,5 +244,12 @@ public class Player : MonoBehaviour
     private void OnPausePerformed(InputAction.CallbackContext context)
     {
         _pause.Toggle();
+    }
+
+    private void OnBindingOverridesChanged()
+    {
+        _inputs.Disable();
+        PlayerInputBindingOverrideStore.Apply(_inputs);
+        _inputs.Enable();
     }
 }

@@ -401,6 +401,7 @@ public sealed class MainMenuSettingsPanelView : MonoBehaviour
         }
 
         _settingsData = CreateDefaultData();
+        PlayerInputBindingOverrideStore.Reset();
         ApplyData();
         Save();
         RefreshView();

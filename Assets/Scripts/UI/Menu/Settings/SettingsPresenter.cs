@@ -141,6 +141,7 @@ internal sealed class SettingsPresenter
     private void OnResetClicked()
     {
         _settingsData = CreateDefaultData();
+        PlayerInputBindingOverrideStore.Reset();
 
         ApplyData();
         SaveAndRefresh();
