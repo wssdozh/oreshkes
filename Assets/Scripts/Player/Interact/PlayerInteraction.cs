@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using UnityEngine;
 
@@ -17,10 +18,13 @@ public class PlayerInteraction : MonoBehaviour
     private Coroutine _hoverCoroutine;
     private WaitForSeconds _hoverWait;
 
+    public event Action<Interactable> Interacted;
+
     private void OnEnable()
     {
         _hoverWait = CreateHoverWait();
         _hoverCoroutine = StartCoroutine(HoverTickRoutine());
+        _interactor.Interacted += OnInteracted;
     }
 
     private void OnDisable()
@@ -30,6 +34,8 @@ public class PlayerInteraction : MonoBehaviour
             StopCoroutine(_hoverCoroutine);
             _hoverCoroutine = null;
         }
+
+        _interactor.Interacted -= OnInteracted;
     }
 
     private void Update()
@@ -84,5 +90,13 @@ public class PlayerInteraction : MonoBehaviour
     private WaitForSeconds CreateHoverWait()
     {
         return new WaitForSeconds(_hoverTickSeconds);
+    }
+
+    private void OnInteracted(Interactable interactable)
+    {
+        if (Interacted != null)
+        {
+            Interacted.Invoke(interactable);
+        }
     }
 }

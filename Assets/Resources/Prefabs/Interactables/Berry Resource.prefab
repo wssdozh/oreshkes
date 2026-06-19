@@ -14,6 +14,7 @@ GameObject:
   - component: {fileID: 7366245925450626594}
   - component: {fileID: 4426484305274051091}
   - component: {fileID: 8749875642096183521}
+  - component: {fileID: 910320000000000001}
   m_Layer: 0
   m_Name: Berry Resource
   m_TagString: Untagged
@@ -155,3 +156,17 @@ MonoBehaviour:
   _sinkDuration: 1.15
   _sinkDistanceMultiplier: 1.35
   _sinkTiltMaxAngle: 10
+--- !u!114 &910320000000000001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9099302578165322558}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a72b2a9e4d7447f69c92a68b7d70f004, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ObjectiveTarget
+  _id: start.small_tank
+  _health: {fileID: 4426484305274051091}

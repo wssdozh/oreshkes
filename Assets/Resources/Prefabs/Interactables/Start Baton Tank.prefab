@@ -111,6 +111,7 @@ GameObject:
   m_Component:
   - component: {fileID: 740280986944895310}
   - component: {fileID: 131899963276513756}
+  - component: {fileID: 910310000000000001}
   m_Layer: 7
   m_Name: Start Baton Tank
   m_TagString: Untagged
@@ -150,6 +151,20 @@ MonoBehaviour:
   _intactObject: {fileID: 735951979241723704}
   _pickupPrefab: {fileID: 1864531296725922894, guid: 63964cb5d2bc33540b1943393b2507b7, type: 3}
   _spawnOffset: {x: 0, y: 0.9, z: 0}
+--- !u!114 &910310000000000001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7892580720158080282}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a72b2a9e4d7447f69c92a68b7d70f004, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ObjectiveTarget
+  _id: start.large_tank
+  _health: {fileID: 9018567847222104301}
 --- !u!1001 &865311916851755090
 PrefabInstance:
   m_ObjectHideFlags: 0

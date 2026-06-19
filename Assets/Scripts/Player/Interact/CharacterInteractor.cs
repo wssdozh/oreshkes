@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 public class CharacterInteractor : MonoBehaviour
@@ -14,6 +15,8 @@ public class CharacterInteractor : MonoBehaviour
 
     private Interactable _hovered;
     private readonly Collider[] _interactableBuffer = new Collider[InteractableBufferSize];
+
+    public event Action<Interactable> Interacted;
 
     private void Awake()
     {
@@ -62,6 +65,11 @@ public class CharacterInteractor : MonoBehaviour
         }
 
         _hovered.Interact(interactorGameObject);
+
+        if (Interacted != null)
+        {
+            Interacted.Invoke(_hovered);
+        }
 
         _texter.Show(_hovered.GetPrompt());
     }

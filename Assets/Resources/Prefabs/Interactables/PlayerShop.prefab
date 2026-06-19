@@ -233,6 +233,7 @@ GameObject:
   - component: {fileID: 3935552818461049421}
   - component: {fileID: 2105307199381881589}
   - component: {fileID: 819068272496880525}
+  - component: {fileID: 910330000000000001}
   m_Layer: 7
   m_Name: PlayerShop
   m_TagString: Untagged
@@ -397,6 +398,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerModifierMenuOpener
   _shop: {fileID: 3935552818461049421}
   _menuView: {fileID: 3307958040742778291}
+--- !u!114 &910330000000000001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4886392652990026178}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a72b2a9e4d7447f69c92a68b7d70f004, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ObjectiveTarget
+  _id: start.terminal
+  _health: {fileID: 0}
 --- !u!1 &5638532648285009811
 GameObject:
   m_ObjectHideFlags: 0

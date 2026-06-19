@@ -20,7 +20,14 @@ public sealed class RoomEnterTrigger : MonoBehaviour
     private BoxCollider _boxCollider;
     private Rigidbody _rigidbody;
 
+    public static event Action<RoomEnterTrigger> AnyEntered;
     public event Action Entered;
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetStaticState()
+    {
+        AnyEntered = null;
+    }
 
     public void Setup(RoomDoorMarker roomDoorMarker, float blockSize)
     {
@@ -52,7 +59,19 @@ public sealed class RoomEnterTrigger : MonoBehaviour
 
         _playerColliders.Add(other);
 
-        if (_playerColliders.Count == 1 && Entered != null)
+        if (_playerColliders.Count != 1)
+        {
+            return;
+        }
+
+        Action<RoomEnterTrigger> anyEntered = AnyEntered;
+
+        if (anyEntered != null)
+        {
+            anyEntered.Invoke(this);
+        }
+
+        if (Entered != null)
         {
             Entered.Invoke();
         }

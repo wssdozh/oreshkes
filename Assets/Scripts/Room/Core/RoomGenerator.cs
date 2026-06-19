@@ -92,6 +92,22 @@ public sealed class RoomGenerator : MonoBehaviour
         _runtimeProfile = null;
     }
 
+    public bool TryGetRoomType(out RoomType roomType)
+    {
+        RoomTypeProfile activeProfile = GetActiveProfile();
+
+        if (activeProfile == null)
+        {
+            roomType = RoomType.Start;
+
+            return false;
+        }
+
+        roomType = activeProfile.RoomType;
+
+        return true;
+    }
+
     [ContextMenu("Generate (Full)")]
     public void Generate()
     {
