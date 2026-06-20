@@ -1,10 +1,14 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 
 [DisallowMultipleComponent]
 public sealed class CursorInputHandler : MonoBehaviour
 {
+    private readonly List<RaycastResult> _uiRaycastResults = new List<RaycastResult>(8);
+
     [SerializeField] private CursorManager _cursorManager;
     [SerializeField] private CursorAnimator _cursorAnimator;
     [SerializeField] private float _holdThresholdSeconds = 0.18f;
@@ -12,6 +16,8 @@ public sealed class CursorInputHandler : MonoBehaviour
     private PlayerInputActions _inputs;
     private Coroutine _holdCoroutine;
     private WaitForSecondsRealtime _holdWait;
+    private EventSystem _uiEventSystem;
+    private PointerEventData _uiPointerEventData;
     private Player _player;
 
     private bool _isAttackPressed;
@@ -86,6 +92,11 @@ public sealed class CursorInputHandler : MonoBehaviour
 
     private void OnAttackPerformed(InputAction.CallbackContext callbackContext)
     {
+        if (IsPointerOverUi())
+        {
+            return;
+        }
+
         _isAttackPressed = true;
         _isHoldConfirmed = false;
         StartHoldLoop();
@@ -95,6 +106,11 @@ public sealed class CursorInputHandler : MonoBehaviour
 
     private void OnAttackCanceled(InputAction.CallbackContext callbackContext)
     {
+        if (_isAttackPressed == false)
+        {
+            return;
+        }
+
         if (_isHoldConfirmed)
         {
             _cursorAnimator.EndHold();
@@ -112,11 +128,21 @@ public sealed class CursorInputHandler : MonoBehaviour
 
     private void OnUseItemPerformed(InputAction.CallbackContext callbackContext)
     {
+        if (IsPointerOverUi())
+        {
+            return;
+        }
+
         _cursorAnimator.PlaySecondaryClick();
     }
 
     private void OnScrollPerformed(InputAction.CallbackContext callbackContext)
     {
+        if (IsPointerOverUi())
+        {
+            return;
+        }
+
         Vector2 scrollValue = callbackContext.ReadValue<Vector2>();
         float direction = scrollValue.y;
 
@@ -201,5 +227,35 @@ public sealed class CursorInputHandler : MonoBehaviour
         }
 
         return _player.IsInBattle;
+    }
+
+    private bool IsPointerOverUi()
+    {
+        EventSystem eventSystem = EventSystem.current;
+
+        if (eventSystem == null)
+        {
+            return false;
+        }
+
+        Pointer pointer = Pointer.current;
+
+        if (pointer == null)
+        {
+            return false;
+        }
+
+        if (_uiPointerEventData == null || _uiEventSystem != eventSystem)
+        {
+            _uiEventSystem = eventSystem;
+            _uiPointerEventData = new PointerEventData(eventSystem);
+        }
+
+        _uiPointerEventData.Reset();
+        _uiPointerEventData.position = pointer.position.ReadValue();
+        _uiRaycastResults.Clear();
+        eventSystem.RaycastAll(_uiPointerEventData, _uiRaycastResults);
+
+        return _uiRaycastResults.Count > 0;
     }
 }

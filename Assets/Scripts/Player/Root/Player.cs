@@ -1,9 +1,13 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 
 public class Player : MonoBehaviour
 {
+    private readonly List<RaycastResult> _uiRaycastResults = new List<RaycastResult>(8);
+
     [Header("Зависимости")]
     [SerializeField] private Health _health;
     [SerializeField] private RectTransform _uiCanvas;
@@ -20,6 +24,8 @@ public class Player : MonoBehaviour
     private BossHealthOverlay _bossHealthOverlay;
     private RemainingEnemyOverlay _remainingEnemyOverlay;
     private PlayerObjectiveTracker _objectiveTracker;
+    private EventSystem _uiEventSystem;
+    private PointerEventData _uiPointerEventData;
 
     public static Player Instance { get; private set; }
     public event Action Died;
@@ -216,6 +222,11 @@ public class Player : MonoBehaviour
 
     private void OnAttackPerformed(InputAction.CallbackContext context)
     {
+        if (IsPointerOverUi())
+        {
+            return;
+        }
+
         bool attackStarted = _combat.AttackStart();
 
         if (attackStarted)
@@ -236,6 +247,11 @@ public class Player : MonoBehaviour
 
     private void OnUseItemPerformed(InputAction.CallbackContext context)
     {
+        if (IsPointerOverUi())
+        {
+            return;
+        }
+
         bool isUsed = _inventory.TryUseActiveItem();
 
         if (isUsed == false)
@@ -251,6 +267,11 @@ public class Player : MonoBehaviour
 
     private void OnScrollPerformed(InputAction.CallbackContext context)
     {
+        if (IsPointerOverUi())
+        {
+            return;
+        }
+
         Vector2 scrollValue = context.ReadValue<Vector2>();
         _inventory.Scroll(scrollValue);
     }
@@ -289,5 +310,35 @@ public class Player : MonoBehaviour
         {
             Interacted.Invoke(interactable);
         }
+    }
+
+    private bool IsPointerOverUi()
+    {
+        EventSystem eventSystem = EventSystem.current;
+
+        if (eventSystem == null)
+        {
+            return false;
+        }
+
+        Pointer pointer = Pointer.current;
+
+        if (pointer == null)
+        {
+            return false;
+        }
+
+        if (_uiPointerEventData == null || _uiEventSystem != eventSystem)
+        {
+            _uiEventSystem = eventSystem;
+            _uiPointerEventData = new PointerEventData(eventSystem);
+        }
+
+        _uiPointerEventData.Reset();
+        _uiPointerEventData.position = pointer.position.ReadValue();
+        _uiRaycastResults.Clear();
+        eventSystem.RaycastAll(_uiPointerEventData, _uiRaycastResults);
+
+        return _uiRaycastResults.Count > 0;
     }
 }

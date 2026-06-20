@@ -775,8 +775,6 @@ public sealed class PlayerObjectiveTracker : MonoBehaviour
 
     private void OnRoomEntered(RoomEnterTrigger roomEnterTrigger)
     {
-        TryCompleteSteps(ObjectiveTrigger.ExitRoom, string.Empty);
-
         if (roomEnterTrigger == null)
         {
             return;
@@ -794,12 +792,49 @@ public sealed class PlayerObjectiveTracker : MonoBehaviour
             return;
         }
 
-        if (_currentRoomGenerator == roomGenerator)
+        if (IsActiveProfileRoom(roomGenerator, roomType))
         {
+            CompleteCurrentRoomExit();
+
             return;
         }
 
+        if (_currentProfile != null)
+        {
+            TryCompleteSteps(ObjectiveTrigger.ExitRoom, string.Empty);
+        }
+
         ShowProfile(roomType, roomGenerator);
+    }
+
+    private bool IsActiveProfileRoom(RoomGenerator roomGenerator, RoomType roomType)
+    {
+        if (_currentRoomGenerator == roomGenerator)
+        {
+            return true;
+        }
+
+        if (_currentRoomGenerator != null)
+        {
+            return false;
+        }
+
+        if (_currentProfile == null)
+        {
+            return false;
+        }
+
+        return _currentProfile.RoomType == roomType;
+    }
+
+    private void CompleteCurrentRoomExit()
+    {
+        TryCompleteSteps(ObjectiveTrigger.ExitRoom, string.Empty);
+        _currentProfile = null;
+        _currentRoomGenerator = null;
+        _completedStepIndices.Clear();
+        _enemyCounters.Clear();
+        _view.Hide();
     }
 
     private string GetEnemyType(Enemy enemy)

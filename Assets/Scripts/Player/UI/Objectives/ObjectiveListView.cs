@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using DG.Tweening;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 [DisallowMultipleComponent]
@@ -15,6 +16,7 @@ public sealed class ObjectiveListView : MonoBehaviour
     private const float StepWidth = 382f;
     private const float RootTopOffset = -28f;
     private const float RootRightOffset = -28f;
+    private const float RootScale = 0.77f;
     private const float ItemHeight = 48f;
     private const float ExpandedItemHeight = 92f;
     private const float TitleHeight = 52f;
@@ -26,6 +28,10 @@ public sealed class ObjectiveListView : MonoBehaviour
     private const float StepFontSize = 18f;
     private const float DescriptionFontSize = 14f;
     private const float MinFontSize = 12f;
+    private const int VisibleStepCount = 3;
+    private const float ScrollTweenDuration = 0.18f;
+    private const float ScrollWheelStep = 0.18f;
+    private const float ScrollViewportHeight = ItemHeight * VisibleStepCount + ItemSpacing * (VisibleStepCount - 1);
     private const float AppearDuration = 0.18f;
     private const float HideDuration = 0.14f;
     private const float MoveDuration = 0.28f;
@@ -44,16 +50,21 @@ public sealed class ObjectiveListView : MonoBehaviour
     private readonly List<ObjectiveStepViewData> _currentSteps = new List<ObjectiveStepViewData>(8);
     private readonly Dictionary<int, ObjectiveItemView> _stepItems = new Dictionary<int, ObjectiveItemView>(8);
     private readonly Dictionary<ObjectiveItemHoverHandler, ObjectiveItemView> _hoverItems = new Dictionary<ObjectiveItemHoverHandler, ObjectiveItemView>(8);
-
     private RectTransform _root;
+    private RectTransform _viewport;
+    private RectTransform _content;
     private VerticalLayoutGroup _layoutGroup;
     private ContentSizeFitter _contentSizeFitter;
+    private VerticalLayoutGroup _stepsLayoutGroup;
+    private ContentSizeFitter _stepsContentSizeFitter;
+    private ScrollRect _scrollRect;
     private Button _itemTemplate;
     private ObjectiveProfile _currentProfile;
     private string _currentTitle;
     private ObjectiveItemView _titleItem;
     private ObjectiveItemClickHandler _titleClickHandler;
     private Sequence _sequence;
+    private Tween _scrollTween;
     private readonly HashSet<int> _completedStepIndices = new HashSet<int>();
     private bool _areStepsCollapsed;
 
@@ -148,6 +159,7 @@ public sealed class ObjectiveListView : MonoBehaviour
 
     private void OnDestroy()
     {
+        KillScrollTween();
         KillSequence(false);
         ClearItems();
     }
@@ -163,6 +175,7 @@ public sealed class ObjectiveListView : MonoBehaviour
         _root.pivot = new Vector2(1f, 1f);
         _root.anchoredPosition = new Vector2(RootRightOffset, RootTopOffset);
         _root.sizeDelta = new Vector2(RootWidth, 0f);
+        _root.localScale = Vector3.one * RootScale;
 
         _layoutGroup = rootObject.AddComponent<VerticalLayoutGroup>();
         _layoutGroup.childAlignment = TextAnchor.UpperRight;
@@ -175,6 +188,70 @@ public sealed class ObjectiveListView : MonoBehaviour
         _contentSizeFitter = rootObject.AddComponent<ContentSizeFitter>();
         _contentSizeFitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
         _contentSizeFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+        BuildScrollArea(rootObject.transform);
+    }
+
+    private void BuildScrollArea(Transform parent)
+    {
+        GameObject viewportObject = new GameObject("ObjectiveScrollViewport", typeof(RectTransform));
+        viewportObject.transform.SetParent(parent, false);
+        _viewport = viewportObject.GetComponent<RectTransform>();
+        _viewport.anchorMin = new Vector2(1f, 1f);
+        _viewport.anchorMax = new Vector2(1f, 1f);
+        _viewport.pivot = new Vector2(1f, 1f);
+        _viewport.sizeDelta = new Vector2(RootWidth, ScrollViewportHeight);
+
+        Image viewportImage = viewportObject.AddComponent<Image>();
+        viewportImage.color = Color.clear;
+        viewportImage.raycastTarget = true;
+        viewportObject.AddComponent<RectMask2D>();
+        AddScrollEventTrigger(viewportObject);
+
+        LayoutElement viewportLayoutElement = viewportObject.AddComponent<LayoutElement>();
+        viewportLayoutElement.minWidth = RootWidth;
+        viewportLayoutElement.preferredWidth = RootWidth;
+        viewportLayoutElement.minHeight = ScrollViewportHeight;
+        viewportLayoutElement.preferredHeight = ScrollViewportHeight;
+
+        GameObject contentObject = new GameObject("ObjectiveScrollContent", typeof(RectTransform));
+        contentObject.transform.SetParent(viewportObject.transform, false);
+        _content = contentObject.GetComponent<RectTransform>();
+        _content.anchorMin = new Vector2(0f, 1f);
+        _content.anchorMax = new Vector2(1f, 1f);
+        _content.pivot = new Vector2(1f, 1f);
+        _content.anchoredPosition = Vector2.zero;
+        _content.sizeDelta = Vector2.zero;
+
+        _stepsLayoutGroup = contentObject.AddComponent<VerticalLayoutGroup>();
+        _stepsLayoutGroup.childAlignment = TextAnchor.UpperRight;
+        _stepsLayoutGroup.childControlWidth = false;
+        _stepsLayoutGroup.childControlHeight = true;
+        _stepsLayoutGroup.childForceExpandWidth = false;
+        _stepsLayoutGroup.childForceExpandHeight = false;
+        _stepsLayoutGroup.spacing = ItemSpacing;
+
+        _stepsContentSizeFitter = contentObject.AddComponent<ContentSizeFitter>();
+        _stepsContentSizeFitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+        _stepsContentSizeFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+        _scrollRect = _root.gameObject.AddComponent<ScrollRect>();
+        _scrollRect.viewport = _viewport;
+        _scrollRect.content = _content;
+        _scrollRect.horizontal = false;
+        _scrollRect.vertical = true;
+        _scrollRect.movementType = ScrollRect.MovementType.Clamped;
+        _scrollRect.inertia = true;
+        _scrollRect.scrollSensitivity = 0f;
+    }
+
+    private void AddScrollEventTrigger(GameObject targetObject)
+    {
+        EventTrigger eventTrigger = targetObject.AddComponent<EventTrigger>();
+        EventTrigger.Entry scrollEntry = new EventTrigger.Entry();
+        scrollEntry.eventID = EventTriggerType.Scroll;
+        scrollEntry.callback.AddListener(OnViewportScrolled);
+        eventTrigger.triggers.Add(scrollEntry);
     }
 
     private void ReplaceProfile(
@@ -221,6 +298,7 @@ public sealed class ObjectiveListView : MonoBehaviour
         _root.gameObject.SetActive(true);
 
         _titleItem = CreateItem(
+            _root,
             TitleName,
             title,
             string.Empty,
@@ -233,6 +311,7 @@ public sealed class ObjectiveListView : MonoBehaviour
         AddTitleClickHandler(_titleItem);
         CreateStepItems();
         ApplyOrder();
+        ScrollToTop();
         PlayAppear();
     }
 
@@ -248,6 +327,7 @@ public sealed class ObjectiveListView : MonoBehaviour
             }
 
             ObjectiveItemView item = CreateItem(
+                _content,
                 StepName,
                 step.Text,
                 step.Description,
@@ -263,6 +343,7 @@ public sealed class ObjectiveListView : MonoBehaviour
     }
 
     private ObjectiveItemView CreateItem(
+        Transform parent,
         string itemName,
         string text,
         string description,
@@ -273,7 +354,7 @@ public sealed class ObjectiveListView : MonoBehaviour
         FontStyles fontStyle,
         Color textColor)
     {
-        Button button = Instantiate(_itemTemplate, _root);
+        Button button = Instantiate(_itemTemplate, parent);
         button.name = itemName;
         button.enabled = false;
 
@@ -407,7 +488,7 @@ public sealed class ObjectiveListView : MonoBehaviour
         Dictionary<ObjectiveItemView, Vector2> startPositions = CapturePositions();
         CopyCompletedSteps(completedStepIndices);
         ApplyOrder();
-        LayoutRebuilder.ForceRebuildLayoutImmediate(_root);
+        RebuildLayout();
         Dictionary<ObjectiveItemView, Vector2> targetPositions = CapturePositions();
 
         SetLayoutEnabled(false);
@@ -469,7 +550,12 @@ public sealed class ObjectiveListView : MonoBehaviour
             _titleItem.RectTransform.SetSiblingIndex(0);
         }
 
-        int siblingIndex = 1;
+        if (_viewport != null)
+        {
+            _viewport.SetSiblingIndex(1);
+        }
+
+        int siblingIndex = 0;
 
         if (_currentProfile == null)
         {
@@ -712,7 +798,7 @@ public sealed class ObjectiveListView : MonoBehaviour
     private void OnMoveCompleted()
     {
         SetLayoutEnabled(true);
-        LayoutRebuilder.ForceRebuildLayoutImmediate(_root);
+        RebuildLayout();
     }
 
     private void OnItemPointerEntered(ObjectiveItemHoverHandler hoverHandler)
@@ -724,7 +810,7 @@ public sealed class ObjectiveListView : MonoBehaviour
 
         ObjectiveItemView item = _hoverItems[hoverHandler];
         item.SetHovered(true, HoverDuration);
-        LayoutRebuilder.ForceRebuildLayoutImmediate(_root);
+        RebuildLayout();
     }
 
     private void OnItemPointerExited(ObjectiveItemHoverHandler hoverHandler)
@@ -736,7 +822,7 @@ public sealed class ObjectiveListView : MonoBehaviour
 
         ObjectiveItemView item = _hoverItems[hoverHandler];
         item.SetHovered(false, HoverDuration);
-        LayoutRebuilder.ForceRebuildLayoutImmediate(_root);
+        RebuildLayout();
     }
 
     private void OnTitleClicked(ObjectiveItemClickHandler clickHandler)
@@ -775,7 +861,88 @@ public sealed class ObjectiveListView : MonoBehaviour
 
     private void RebuildLayout()
     {
+        if (_content != null)
+        {
+            LayoutRebuilder.ForceRebuildLayoutImmediate(_content);
+        }
+
         LayoutRebuilder.ForceRebuildLayoutImmediate(_root);
+    }
+
+    private void ScrollToTop()
+    {
+        RebuildLayout();
+        KillScrollTween();
+
+        if (_scrollRect == null)
+        {
+            return;
+        }
+
+        _scrollRect.verticalNormalizedPosition = 1f;
+    }
+
+    private void OnViewportScrolled(BaseEventData eventData)
+    {
+        PointerEventData pointerEventData = eventData as PointerEventData;
+
+        if (pointerEventData == null)
+        {
+            return;
+        }
+
+        float scrollDelta = pointerEventData.scrollDelta.y;
+
+        if (Mathf.Abs(scrollDelta) <= Mathf.Epsilon)
+        {
+            scrollDelta = pointerEventData.scrollDelta.x;
+        }
+
+        if (Mathf.Abs(scrollDelta) <= Mathf.Epsilon)
+        {
+            return;
+        }
+
+        SmoothScroll(scrollDelta);
+    }
+
+    private void SmoothScroll(float scrollDelta)
+    {
+        if (_scrollRect == null)
+        {
+            return;
+        }
+
+        if (_content == null)
+        {
+            return;
+        }
+
+        if (_viewport == null)
+        {
+            return;
+        }
+
+        if (_content.rect.height <= _viewport.rect.height + Mathf.Epsilon)
+        {
+            return;
+        }
+
+        float targetPosition = Mathf.Clamp01(
+            _scrollRect.verticalNormalizedPosition + scrollDelta * ScrollWheelStep);
+        KillScrollTween();
+        _scrollTween = DOTween.To(
+                () => _scrollRect.verticalNormalizedPosition,
+                SetScrollPosition,
+                targetPosition,
+                ScrollTweenDuration)
+            .SetEase(Ease.OutCubic)
+            .SetTarget(_scrollRect);
+    }
+
+    private void SetScrollPosition(float position)
+    {
+        _scrollRect.verticalNormalizedPosition = position;
     }
 
     private void OnHidden()
@@ -799,6 +966,16 @@ public sealed class ObjectiveListView : MonoBehaviour
         {
             _contentSizeFitter.enabled = isEnabled;
         }
+
+        if (_stepsLayoutGroup != null)
+        {
+            _stepsLayoutGroup.enabled = isEnabled;
+        }
+
+        if (_stepsContentSizeFitter != null)
+        {
+            _stepsContentSizeFitter.enabled = isEnabled;
+        }
     }
 
     private void KillSequence(bool isComplete)
@@ -810,6 +987,16 @@ public sealed class ObjectiveListView : MonoBehaviour
 
         _sequence = null;
         SetLayoutEnabled(true);
+    }
+
+    private void KillScrollTween()
+    {
+        if (_scrollTween != null && _scrollTween.IsActive())
+        {
+            _scrollTween.Kill(false);
+        }
+
+        _scrollTween = null;
     }
 
     private sealed class ObjectiveItemView
@@ -827,6 +1014,7 @@ public sealed class ObjectiveListView : MonoBehaviour
 
         private readonly bool _hasDescription;
         private float _targetScale = 1f;
+        private float _animationAlpha = 1f;
 
         public ObjectiveItemView(
             Button button,
@@ -854,7 +1042,7 @@ public sealed class ObjectiveListView : MonoBehaviour
 
         public void PrepareAppear(float scale)
         {
-            CanvasGroup.alpha = 0f;
+            SetAnimationAlpha(0f);
             RectTransform.localScale = Vector3.one * scale;
         }
 
@@ -962,14 +1150,16 @@ public sealed class ObjectiveListView : MonoBehaviour
                 Button.gameObject.SetActive(true);
                 LayoutElement.ignoreLayout = false;
                 SetHeight(0f);
-                CanvasGroup.alpha = 0f;
+                SetAnimationAlpha(0f);
                 RectTransform.localScale = Vector3.one * hiddenScale;
                 SetPointerEnabled(false);
 
                 Sequence showSequence = DOTween.Sequence();
                 showSequence.Join(DOTween.To(() => LayoutElement.preferredHeight, SetHeight, Height, duration)
                     .SetEase(Ease.OutCubic));
-                showSequence.Join(CanvasGroup.DOFade(1f, duration).SetEase(Ease.OutSine));
+                showSequence.Join(DOTween.To(() => _animationAlpha, SetAnimationAlpha, 1f, duration)
+                    .SetEase(Ease.OutSine)
+                    .SetTarget(CanvasGroup));
                 showSequence.Join(RectTransform.DOScale(_targetScale, duration).SetEase(Ease.OutBack));
                 showSequence.OnComplete(() => SetPointerEnabled(CanHover && _hasDescription));
 
@@ -984,7 +1174,9 @@ public sealed class ObjectiveListView : MonoBehaviour
             Sequence hideSequence = DOTween.Sequence();
             hideSequence.Join(DOTween.To(() => LayoutElement.preferredHeight, SetHeight, 0f, duration)
                 .SetEase(Ease.InCubic));
-            hideSequence.Join(CanvasGroup.DOFade(0f, duration).SetEase(Ease.InSine));
+            hideSequence.Join(DOTween.To(() => _animationAlpha, SetAnimationAlpha, 0f, duration)
+                .SetEase(Ease.InSine)
+                .SetTarget(CanvasGroup));
             hideSequence.Join(RectTransform.DOScale(hiddenScale, duration).SetEase(Ease.InSine));
             hideSequence.OnComplete(DisableLayout);
 
@@ -998,7 +1190,7 @@ public sealed class ObjectiveListView : MonoBehaviour
                 Button.gameObject.SetActive(true);
                 LayoutElement.ignoreLayout = false;
                 SetHeight(Height);
-                CanvasGroup.alpha = 1f;
+                SetAnimationAlpha(1f);
                 RectTransform.localScale = Vector3.one * _targetScale;
                 SetPointerEnabled(CanHover && _hasDescription);
 
@@ -1010,7 +1202,7 @@ public sealed class ObjectiveListView : MonoBehaviour
             DescriptionText.alpha = 0f;
             SetPointerEnabled(false);
             SetHeight(0f);
-            CanvasGroup.alpha = 0f;
+            SetAnimationAlpha(0f);
             RectTransform.localScale = Vector3.one * hiddenScale;
             DisableLayout();
         }
@@ -1044,7 +1236,9 @@ public sealed class ObjectiveListView : MonoBehaviour
         public Tween BuildAppearTween(float duration)
         {
             Sequence sequence = DOTween.Sequence();
-            sequence.Join(CanvasGroup.DOFade(1f, duration).SetEase(Ease.OutSine));
+            sequence.Join(DOTween.To(() => _animationAlpha, SetAnimationAlpha, 1f, duration)
+                .SetEase(Ease.OutSine)
+                .SetTarget(CanvasGroup));
             sequence.Join(RectTransform.DOScale(1f, duration).SetEase(Ease.OutBack));
 
             return sequence;
@@ -1053,7 +1247,9 @@ public sealed class ObjectiveListView : MonoBehaviour
         public Tween BuildHideTween(float duration, float scale)
         {
             Sequence sequence = DOTween.Sequence();
-            sequence.Join(CanvasGroup.DOFade(0f, duration).SetEase(Ease.InSine));
+            sequence.Join(DOTween.To(() => _animationAlpha, SetAnimationAlpha, 0f, duration)
+                .SetEase(Ease.InSine)
+                .SetTarget(CanvasGroup));
             sequence.Join(RectTransform.DOScale(scale, duration).SetEase(Ease.InSine));
 
             return sequence;
@@ -1066,6 +1262,17 @@ public sealed class ObjectiveListView : MonoBehaviour
             DOTween.Kill(Text);
             DOTween.Kill(DescriptionText);
             DOTween.Kill(LayoutElement);
+        }
+
+        private void SetAnimationAlpha(float alpha)
+        {
+            _animationAlpha = alpha;
+            ApplyAlpha();
+        }
+
+        private void ApplyAlpha()
+        {
+            CanvasGroup.alpha = _animationAlpha;
         }
     }
 }
