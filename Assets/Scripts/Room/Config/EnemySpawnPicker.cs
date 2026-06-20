@@ -24,6 +24,13 @@ public static class EnemySpawnPicker
             throw new InvalidOperationException(nameof(enemySpawns));
         }
 
+        EnemySpawnConfig guaranteedSpawn;
+
+        if (TryPickGuaranteedSpawn(enemySpawns, spawnedEnemySpawns, out guaranteedSpawn))
+        {
+            return guaranteedSpawn;
+        }
+
         float totalWeight = GetTotalWeight(enemySpawns);
 
         if (totalWeight <= 0f)
@@ -67,6 +74,57 @@ public static class EnemySpawnPicker
         }
 
         throw new InvalidOperationException(nameof(enemySpawns));
+    }
+
+    private static bool TryPickGuaranteedSpawn(
+        IReadOnlyList<EnemySpawnConfig> enemySpawns,
+        IReadOnlyList<EnemySpawnConfig> spawnedEnemySpawns,
+        out EnemySpawnConfig result
+    )
+    {
+        for (int spawnIndex = 0; spawnIndex < enemySpawns.Count; spawnIndex++)
+        {
+            EnemySpawnConfig enemySpawn = enemySpawns[spawnIndex];
+
+            if (IsValidSpawn(enemySpawn) == false)
+            {
+                continue;
+            }
+
+            if (enemySpawn.Guaranteed == false)
+            {
+                continue;
+            }
+
+            if (HasSpawned(enemySpawn, spawnedEnemySpawns))
+            {
+                continue;
+            }
+
+            result = enemySpawn;
+            return true;
+        }
+
+        result = null;
+        return false;
+    }
+
+    private static bool HasSpawned(EnemySpawnConfig targetSpawn, IReadOnlyList<EnemySpawnConfig> spawnedEnemySpawns)
+    {
+        if (spawnedEnemySpawns == null)
+        {
+            return false;
+        }
+
+        for (int spawnIndex = 0; spawnIndex < spawnedEnemySpawns.Count; spawnIndex++)
+        {
+            if (spawnedEnemySpawns[spawnIndex] == targetSpawn)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static float GetTotalWeight(IReadOnlyList<EnemySpawnConfig> enemySpawns)
