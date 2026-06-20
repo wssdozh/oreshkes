@@ -57,18 +57,16 @@ public sealed class PickupIdleMotion : PickupIdleBehaviour
             startDelaySeconds = Random.Range(0f, _randomStartDelaySeconds);
 
         _startDelayTween = DOVirtual.DelayedCall(startDelaySeconds, StartLoopTweens);
-        _startDelayTween.SetId(this);
         _startDelayTween.SetLink(gameObject, LinkBehaviour.KillOnDestroy);
+        _startDelayTween.OnKill(OnStartDelayTweenKilled);
     }
 
     private void StopMotion()
     {
-        DOTween.Kill(this);
-
-        _startDelayTween = null;
-        _baseOffsetTween = null;
-        _moveTween = null;
-        _rotationTween = null;
+        _startDelayTween = KillTween(_startDelayTween);
+        _baseOffsetTween = KillTween(_baseOffsetTween);
+        _moveTween = KillTween(_moveTween);
+        _rotationTween = KillTween(_rotationTween);
 
         transform.localPosition = _defaultLocalPosition;
         transform.localEulerAngles = _defaultLocalRotation;
@@ -83,9 +81,9 @@ public sealed class PickupIdleMotion : PickupIdleBehaviour
         {
             _baseOffsetTween = transform.DOLocalMove(_baseLocalPosition, _baseOffsetTransitionSeconds);
             _baseOffsetTween.SetEase(Ease.OutSine);
-            _baseOffsetTween.SetId(this);
             _baseOffsetTween.SetLink(gameObject, LinkBehaviour.KillOnDestroy);
             _baseOffsetTween.OnComplete(StartLoopTweensAfterBaseReached);
+            _baseOffsetTween.OnKill(OnBaseOffsetTweenKilled);
 
             return;
         }
@@ -105,8 +103,8 @@ public sealed class PickupIdleMotion : PickupIdleBehaviour
             _moveTween = transform.DOLocalMove(targetLocalPosition, _moveDurationSeconds);
             _moveTween.SetEase(Ease.InOutSine);
             _moveTween.SetLoops(-1, LoopType.Yoyo);
-            _moveTween.SetId(this);
             _moveTween.SetLink(gameObject, LinkBehaviour.KillOnDestroy);
+            _moveTween.OnKill(OnMoveTweenKilled);
         }
 
         if (_rotationDegrees.sqrMagnitude > Mathf.Epsilon)
@@ -114,8 +112,39 @@ public sealed class PickupIdleMotion : PickupIdleBehaviour
             _rotationTween = transform.DOLocalRotate(targetLocalRotation, _rotationDurationSeconds, RotateMode.FastBeyond360);
             _rotationTween.SetEase(Ease.InOutSine);
             _rotationTween.SetLoops(-1, LoopType.Yoyo);
-            _rotationTween.SetId(this);
             _rotationTween.SetLink(gameObject, LinkBehaviour.KillOnDestroy);
+            _rotationTween.OnKill(OnRotationTweenKilled);
         }
+    }
+
+    private Tween KillTween(Tween tween)
+    {
+        if (tween == null)
+            return null;
+
+        if (tween.IsActive())
+            tween.Kill(false);
+
+        return null;
+    }
+
+    private void OnStartDelayTweenKilled()
+    {
+        _startDelayTween = null;
+    }
+
+    private void OnBaseOffsetTweenKilled()
+    {
+        _baseOffsetTween = null;
+    }
+
+    private void OnMoveTweenKilled()
+    {
+        _moveTween = null;
+    }
+
+    private void OnRotationTweenKilled()
+    {
+        _rotationTween = null;
     }
 }

@@ -16,7 +16,6 @@ public sealed class PickupIdleParticles : PickupIdleBehaviour
     private void Awake()
     {
         if (_particleSystem == null)
-
             throw new InvalidOperationException(nameof(_particleSystem));
     }
 
@@ -42,21 +41,16 @@ public sealed class PickupIdleParticles : PickupIdleBehaviour
         float startDelaySeconds = 0f;
 
         if (_randomStartDelaySeconds > 0f)
-
             startDelaySeconds = UnityEngine.Random.Range(0f, _randomStartDelaySeconds);
 
-
         _startDelayTween = DOVirtual.DelayedCall(startDelaySeconds, PlayNow);
-        _startDelayTween.SetId(this);
         _startDelayTween.SetLink(_particleSystem.gameObject, LinkBehaviour.KillOnDestroy);
+        _startDelayTween.OnKill(OnStartDelayTweenKilled);
     }
 
     private void StopParticles()
     {
-        DOTween.Kill(this);
-
-        _startDelayTween = null;
-
+        KillStartDelayTween();
 
         if (_clearOnStop)
         {
@@ -71,5 +65,21 @@ public sealed class PickupIdleParticles : PickupIdleBehaviour
     private void PlayNow()
     {
         _particleSystem.Play(true);
+    }
+
+    private void KillStartDelayTween()
+    {
+        if (_startDelayTween == null)
+            return;
+
+        if (_startDelayTween.IsActive())
+            _startDelayTween.Kill(false);
+
+        _startDelayTween = null;
+    }
+
+    private void OnStartDelayTweenKilled()
+    {
+        _startDelayTween = null;
     }
 }
