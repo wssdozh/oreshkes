@@ -4,17 +4,9 @@ using UnityEngine.Audio;
 
 internal sealed class SettingsPresenter
 {
-    private const string MasterParameterName = "Master";
-    private const string MusicParameterName = "Music";
-    private const string EffectsParameterName = "Effects";
-
     private const string HighQualityName = "HighQuality";
     private const string MediumQualityName = "MediumQuality";
     private const string LowQualityName = "LowQuality";
-
-    private const float MinDb = -80.0f;
-    private const float MuteThreshold = 0.0001f;
-    private const float DbMultiplier = 20.0f;
 
     private readonly SettingsPanelView _view;
     private readonly AudioMixer _audioMixer;
@@ -79,7 +71,10 @@ internal sealed class SettingsPresenter
     {
         _settingsData.MasterVolume = Mathf.Clamp01(value);
 
-        ApplyVolume(MasterParameterName, _settingsData.MasterVolume);
+        AudioSettingsApplier.ApplyVolume(
+            _audioMixer,
+            AudioSettingsApplier.MasterParameterName,
+            _settingsData.MasterVolume);
         SaveAndRefresh();
     }
 
@@ -87,7 +82,10 @@ internal sealed class SettingsPresenter
     {
         _settingsData.MusicVolume = Mathf.Clamp01(value);
 
-        ApplyVolume(MusicParameterName, _settingsData.MusicVolume);
+        AudioSettingsApplier.ApplyVolume(
+            _audioMixer,
+            AudioSettingsApplier.MusicParameterName,
+            _settingsData.MusicVolume);
         SaveAndRefresh();
     }
 
@@ -95,7 +93,10 @@ internal sealed class SettingsPresenter
     {
         _settingsData.EffectsVolume = Mathf.Clamp01(value);
 
-        ApplyVolume(EffectsParameterName, _settingsData.EffectsVolume);
+        AudioSettingsApplier.ApplyVolume(
+            _audioMixer,
+            AudioSettingsApplier.EffectsParameterName,
+            _settingsData.EffectsVolume);
         SaveAndRefresh();
     }
 
@@ -155,23 +156,10 @@ internal sealed class SettingsPresenter
 
     private void ApplyData()
     {
-        ApplyVolume(MasterParameterName, _settingsData.MasterVolume);
-        ApplyVolume(MusicParameterName, _settingsData.MusicVolume);
-        ApplyVolume(EffectsParameterName, _settingsData.EffectsVolume);
+        AudioSettingsApplier.Apply(_audioMixer, _settingsData);
         ApplyFullScreen(_settingsData.IsFullScreen);
         ApplyQuality(_settingsData.QualityLevel);
         ApplyVSync(_settingsData.IsVSyncEnabled);
-    }
-
-    private void ApplyVolume(string parameterName, float linearValue)
-    {
-        float dbValue = LinearToDb(linearValue);
-        bool isApplied = _audioMixer.SetFloat(parameterName, dbValue);
-
-        if (isApplied == false)
-        {
-            throw new InvalidOperationException(nameof(_audioMixer));
-        }
     }
 
     private void ApplyFullScreen(bool isFullScreen)
@@ -252,13 +240,4 @@ internal sealed class SettingsPresenter
         return -1;
     }
 
-    private float LinearToDb(float linearValue)
-    {
-        if (linearValue <= MuteThreshold)
-        {
-            return MinDb;
-        }
-
-        return Mathf.Log10(linearValue) * DbMultiplier;
-    }
 }
