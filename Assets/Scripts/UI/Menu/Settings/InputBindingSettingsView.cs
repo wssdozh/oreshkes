@@ -52,6 +52,7 @@ public sealed class InputBindingSettingsView : MonoBehaviour
     private const float ButtonFontSize = 20.0f;
     private const float ButtonFontMinSize = 12.0f;
     private const float RowSpacing = 18.0f;
+    private const int SectionBottomPadding = 8;
 
     private static readonly Color s_separatorColor = new Color(1.0f, 1.0f, 1.0f, 0.55f);
 
@@ -156,10 +157,28 @@ public sealed class InputBindingSettingsView : MonoBehaviour
         RectTransform sectionTemplate = FindSectionTemplate();
         RectTransform section = Instantiate(sectionTemplate, _content);
         section.name = SectionName;
+        TightenSectionBottomPadding(section);
         PlaceSection(section);
         ClearChildren(section);
 
         return section;
+    }
+
+    private void TightenSectionBottomPadding(RectTransform section)
+    {
+        VerticalLayoutGroup layoutGroup = section.GetComponent<VerticalLayoutGroup>();
+
+        if (layoutGroup == null)
+        {
+            throw new MissingComponentException(nameof(VerticalLayoutGroup));
+        }
+
+        RectOffset padding = layoutGroup.padding;
+        layoutGroup.padding = new RectOffset(
+            padding.left,
+            padding.right,
+            padding.top,
+            SectionBottomPadding);
     }
 
     private void PlaceSection(RectTransform section)

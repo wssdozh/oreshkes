@@ -90,11 +90,6 @@ public sealed class PauseController : MonoBehaviour
             return;
         }
 
-        if (_timeScale.IsAnimating)
-        {
-            return;
-        }
-
         _timeScale.Animate(
             _timeScaleSettings.PausedTimeScale,
             _timeScaleSettings.PauseDurationSeconds,
@@ -138,11 +133,6 @@ public sealed class PauseController : MonoBehaviour
     public void ResumeTimeOnly()
     {
         if (_isPaused)
-        {
-            return;
-        }
-
-        if (_timeScale.IsAnimating)
         {
             return;
         }
