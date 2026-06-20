@@ -357,7 +357,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WeaponGrip
   _localPositionOffset: {x: -0.13, y: 0.34, z: 0.017}
-  _localRotationOffsetEuler: {x: -90, y: 0, z: 0}
+  _localRotationOffsetEuler: {x: 180, y: 0, z: 90}
 --- !u!1001 &15505551012280725
 PrefabInstance:
   m_ObjectHideFlags: 0
