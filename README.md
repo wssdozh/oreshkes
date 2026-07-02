@@ -6,9 +6,9 @@ Oreshkes - top-down roguelike на Unity про короткие забеги п
 
 ## Видео
 
-<video src="Media/oreshkes-gameplay.mp4" controls width="100%"></video>
+![Gameplay preview](Media/oreshkes-gameplay-preview.gif)
 
-[Открыть видео отдельно](Media/oreshkes-gameplay.mp4)
+[Полное видео](Media/oreshkes-gameplay.mp4)
 
 ## Скриншоты
 
